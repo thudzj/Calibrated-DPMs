@@ -267,16 +267,16 @@ class OurModelWrapper:
         s = torch.ones(x.shape[0], device=x.device) * s_
 
         if self.score_mean:
-            if ":.9f".format(t_) in self.score_mean_dict:
-                score_mean_t = self.score_mean_dict[str(":.9f".format(t_))]
+            if "{:.9f}".format(t_) in self.score_mean_dict:
+                score_mean_t = self.score_mean_dict[str("{:.9f}".format(t_))]
             else:
                 score_mean_t = self.estimate_score_mean(t.view(-1)[0])
-                self.score_mean_dict[str(":.9f".format(t_))] = score_mean_t
-            if str(":.9f".format(s_)) in self.score_mean_dict:
-                score_mean_s = self.score_mean_dict[str(":.9f".format(s_))]
+                self.score_mean_dict[str("{:.9f}".format(t_))] = score_mean_t
+            if str("{:.9f}".format(s_)) in self.score_mean_dict:
+                score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
             else:
                 score_mean_s = self.estimate_score_mean(s.view(-1)[0])
-                self.score_mean_dict[str(":.9f".format(s_))] = score_mean_s
+                self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
         else:
             score_mean_t = 0
             score_mean_s = 0
