@@ -557,7 +557,7 @@ class Diffusion(object):
             xs, _ = ddpm_steps(x, seq, model_fn, self.betas, classifier=classifier, is_cond_classifier=self.config.sampling.cond_class, classifier_scale=self.config.sampling.classifier_scale, **model_kwargs)
             x = xs[-1]
         elif self.args.sample_type == "dpm_solver":
-            from dpm_solver.sampler import NoiseScheduleVP, model_wrapper, DPM_Solver
+            from dpm_solver.sampler import NoiseScheduleVP, model_wrapper, DPM_Solver, OurModelWrapper
             def model_fn(x, t, **model_kwargs):
                 out = model(x, t, **model_kwargs)
                 # If the model outputs both 'mean' and 'variance' (such as improved-DDPM and guided-diffusion),
@@ -577,7 +577,9 @@ class Diffusion(object):
                 total_N=self.config.sampling.total_N,
                 model_kwargs=model_kwargs
             )
-            dpm_solver = DPM_Solver(model_fn_continuous, noise_schedule)
+            our_model_fn = OurModelWrapper(model_fn_continuous, noise_schedule, self.args, self.config, x.device,
+                steps=1000, eps=self.args.start_time, skip_type=self.args.skip_type)
+            dpm_solver = DPM_Solver(our_model_fn, noise_schedule)
             x = dpm_solver.sample(
                 x,
                 steps=self.args.timesteps,

@@ -110,6 +110,13 @@ def parse_args_and_config():
     parser.add_argument("--sequence", action="store_true")
     parser.add_argument("--adaptive_step_size", action="store_true")
     parser.add_argument("--dpm_solver_fast", action="store_true")
+    
+    parser.add_argument(
+        "--score_mean", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--tradeoff", type=float, default=1
+    )
 
     args = parser.parse_args()
     args.log_path = os.path.join(args.exp, "logs", args.doc)
