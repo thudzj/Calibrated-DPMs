@@ -8,6 +8,7 @@ import blobfile as bf
 
 import numpy as np
 import tqdm
+from dpm_solver.sampler import OurModelWrapper, NoiseScheduleVP
 import torch
 import torch.utils.data as data
 
@@ -486,8 +487,15 @@ class Diffusion(object):
         x = inverse_data_transform(config, torch.cat(xs, dim=0))
         for i in range(x.size(0)):
             tvu.save_image(x[i], os.path.join(self.args.image_folder, f"{i}.png"))
-
+    
     def sample_image(self, x, model, last=True, classifier=None, base_samples=None):
+        if not hasattr(self, 'wrapper'):
+            noise_schedule = NoiseScheduleVP(schedule=self.config.sampling.schedule)
+            self.wrapper = OurModelWrapper(noise_schedule, self.args, self.config, x.device,
+                steps=1000, eps=self.args.start_time, skip_type=self.args.skip_type)
+        return self._sample_image(x, model, last, classifier, base_samples)
+
+    def _sample_image(self, x, model, last=True, classifier=None, base_samples=None):
         assert last
         try:
             skip = self.args.skip
@@ -557,7 +565,7 @@ class Diffusion(object):
             xs, _ = ddpm_steps(x, seq, model_fn, self.betas, classifier=classifier, is_cond_classifier=self.config.sampling.cond_class, classifier_scale=self.config.sampling.classifier_scale, **model_kwargs)
             x = xs[-1]
         elif self.args.sample_type == "dpm_solver":
-            from dpm_solver.sampler import NoiseScheduleVP, model_wrapper, DPM_Solver, OurModelWrapper
+            from dpm_solver.sampler import NoiseScheduleVP, model_wrapper, DPM_Solver
             def model_fn(x, t, **model_kwargs):
                 out = model(x, t, **model_kwargs)
                 # If the model outputs both 'mean' and 'variance' (such as improved-DDPM and guided-diffusion),
@@ -577,9 +585,8 @@ class Diffusion(object):
                 total_N=self.config.sampling.total_N,
                 model_kwargs=model_kwargs
             )
-            our_model_fn = OurModelWrapper(model_fn_continuous, noise_schedule, self.args, self.config, x.device,
-                steps=1000, eps=self.args.start_time, skip_type=self.args.skip_type)
-            dpm_solver = DPM_Solver(our_model_fn, noise_schedule)
+            self.wrapper._model_fn = model_fn_continuous
+            dpm_solver = DPM_Solver(self.wrapper, noise_schedule)
             x = dpm_solver.sample(
                 x,
                 steps=self.args.timesteps,

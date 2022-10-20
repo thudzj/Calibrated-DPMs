@@ -216,9 +216,9 @@ def model_wrapper(model, noise_schedule=None, is_cond_classifier=False, classifi
     return model_fn
 
 class OurModelWrapper:
-    def __init__(self, model_fn, noise_schedule, args, config, device,
+    def __init__(self, noise_schedule, args, config, device,
                  steps=1000, eps=1e-4, T=None, skip_type='logSNR'):
-        self._model_fn = model_fn
+        self._model_fn = None
         self.noise_schedule = noise_schedule
 
         self.args = args
@@ -265,19 +265,18 @@ class OurModelWrapper:
         s_idx = min(s_idx, len(self.timesteps) - 1)
         s_ = self.timesteps[s_idx].item()
         s = torch.ones(x.shape[0], device=x.device) * s_
-        print(t_, s_)
 
         if self.score_mean:
-            if t_ in self.score_mean_dict:
-                score_mean_t = self.score_mean_dict[t_]
+            if ":.9f".format(t_) in self.score_mean_dict:
+                score_mean_t = self.score_mean_dict[str(":.9f".format(t_))]
             else:
                 score_mean_t = self.estimate_score_mean(t.view(-1)[0])
-                self.score_mean_dict[t_] = score_mean_t
-            if s_ in self.score_mean_dict:
-                score_mean_s = self.score_mean_dict[s_]
+                self.score_mean_dict[str(":.9f".format(t_))] = score_mean_t
+            if str(":.9f".format(s_)) in self.score_mean_dict:
+                score_mean_s = self.score_mean_dict[str(":.9f".format(s_))]
             else:
                 score_mean_s = self.estimate_score_mean(s.view(-1)[0])
-                self.score_mean_dict[s_] = score_mean_s
+                self.score_mean_dict[str(":.9f".format(s_))] = score_mean_s
         else:
             score_mean_t = 0
             score_mean_s = 0
