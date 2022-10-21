@@ -317,7 +317,7 @@ class OurModelWrapper:
             mean, std = self.noise_schedule.marginal_log_mean_coeff(vec_t).exp(), self.noise_schedule.marginal_std(vec_t)
             
             for _ in range(n_estimates):
-                perturbed_data = mean[:, None, None, None] + std[:, None, None, None] * torch.randn_like(x)
+                perturbed_data = x * mean[:, None, None, None] + std[:, None, None, None] * torch.randn_like(x)
                 score = self._model_fn(perturbed_data, vec_t)
                 if score_sum is None:
                     score_sum = score.sum(0)
