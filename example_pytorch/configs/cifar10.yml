@@ -47,7 +47,7 @@ sampling:
     last_only: True
     fid_stats_dir: "fid_stats/fid_stats_cifar10_train_pytorch.npz"
     fid_total_samples: 50000
-    fid_batch_size: 1000
+    fid_batch_size: 500
     cond_class: false
     classifier_scale: 0.0
 

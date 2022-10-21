@@ -357,7 +357,7 @@ class Diffusion(object):
 
         if self.args.fid:
             self.sample_fid(model, classifier=classifier)
-            if not os.path.exists(os.path.join(self.args.exp, "fid.npy")):
+            if True: #not os.path.exists(os.path.join(self.args.exp, "fid.npy")):
                 logging.info("Begin to compute FID...")
                 fid = calculate_fid_given_paths((self.config.sampling.fid_stats_dir, self.args.image_folder), batch_size=self.config.sampling.fid_batch_size, device='cuda:0', dims=2048, num_workers=8)
                 logging.info("FID: {}".format(fid))
