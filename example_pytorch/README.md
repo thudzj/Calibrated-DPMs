@@ -2,7 +2,13 @@
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original
 ```
-INFO - diffusion.py - 2022-10-21 13:32:56,939 - FID: 3.7399477568322936
+    INFO - diffusion.py - 2022-10-21 13:32:56,939 - FID: 3.7399477568322936
+50 steps
+    INFO - diffusion.py - 2022-10-21 13:57:51,381 - FID: 3.606656278430762
+100 steps
+    INFO - diffusion.py - 2022-10-21 14:21:24,784 - FID: 3.5979548931645695
+200 steps
+    INFO - diffusion.py - 2022-10-21 15:42:58,887 - FID: 3.5917284702100005
 
 ### sec 1.3
 ```
@@ -14,7 +20,13 @@ INFO - diffusion.py - 2022-10-21 13:59:10,399 - FID: 428.48679453530116
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4 --score_mean 
 ```
-INFO - diffusion.py - 2022-10-21 15:29:33,742 - FID: 3.356828692191584
+    INFO - diffusion.py - 2022-10-21 15:29:33,742 - FID: 3.356828692191584
+50 steps
+    INFO - diffusion.py - 2022-10-21 13:30:21,138 - FID: 3.3813551795428793
+100 steps
+    INFO - diffusion.py - 2022-10-21 13:29:58,165 - FID: 3.2917572307267164
+200 steps
+    INFO - diffusion.py - 2022-10-21 15:32:54,742 - FID: 3.376375179294712
 
 ### both
 ```
