@@ -27,6 +27,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-21 13:29:58,165 - FID: 3.2917572307267164
 200 steps
     INFO - diffusion.py - 2022-10-21 15:32:54,742 - FID: 3.376375179294712
+    INFO - diffusion.py - 2022-10-21 20:55:29,118 - FID: 3.376101703370068
 
 ### both
 ```
