@@ -120,6 +120,12 @@ def parse_args_and_config():
     parser.add_argument(
         "--which_for_score_mean", type=str, default="train"
     )
+    parser.add_argument(
+        "--n_estimates", type=int, default=1
+    )
+    parser.add_argument(
+        "--subsample", type=int, default=None
+    )
 
     args = parser.parse_args()
     args.log_path = os.path.join(args.exp, "logs", args.doc)

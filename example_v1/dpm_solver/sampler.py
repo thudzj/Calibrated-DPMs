@@ -234,28 +234,27 @@ class OurModelWrapper:
         t_0 = eps
         t_T = self.noise_schedule.T if T is None else T
         self.timesteps = self.get_time_steps(skip_type=skip_type, t_T=t_T, t_0=t_0, N=steps, device=device)
-
+        
         if args.which_for_score_mean in ['train', 'test']:
             self.config.random_flip = False
             dataset, test_dataset = get_dataset(self.args, self.config)
-            self.data_loader = data.DataLoader(
-                dataset if args.which_for_score_mean == 'train' else test_dataset,
-                batch_size=self.config.training.batch_size,
-                shuffle=True,
-                num_workers=self.config.data.num_workers,
-            )
+            dataset = dataset if args.which_for_score_mean == 'train' else test_dataset
         else:
             transform = torchvision.transforms.Compose(
                     [torchvision.transforms.Resize(config.data.image_size), torchvision.transforms.ToTensor()]
                 )
             dataset = torchvision.datasets.ImageFolder(args.which_for_score_mean, transform=transform)
-            # print(len(dataset), dataset.samples[:5])
-            self.data_loader = data.DataLoader(
-                dataset,
-                batch_size=self.config.training.batch_size,
-                shuffle=True,
-                num_workers=self.config.data.num_workers,
-            )
+        
+        if self.args.subsample is None:
+            self.args.subsample = len(dataset)
+        idx = torch.randperm(len(dataset))[:self.args.subsample]
+        # print(len(dataset), dataset.samples[:5])
+        self.data_loader = data.DataLoader(
+            torch.utils.data.Subset(dataset, idx),
+            batch_size=self.config.training.batch_size,
+            shuffle=True,
+            num_workers=self.config.data.num_workers,
+        )
         
         # print("Using {} to estimate score mean".format(args.which_for_score_mean))
 
@@ -289,14 +288,14 @@ class OurModelWrapper:
             if "{:.9f}".format(t_) in self.score_mean_dict:
                 score_mean_t = self.score_mean_dict[str("{:.9f}".format(t_))]
             else:
-                score_mean_t = self.estimate_score_mean(t.view(-1)[0])
+                score_mean_t = self.estimate_score_mean(t.view(-1)[0], self.args.n_estimates)
                 self.score_mean_dict[str("{:.9f}".format(t_))] = score_mean_t
             
             if self.tradeoff < 1:
                 if str("{:.9f}".format(s_)) in self.score_mean_dict:
                     score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
                 else:
-                    score_mean_s = self.estimate_score_mean(s.view(-1)[0])
+                    score_mean_s = self.estimate_score_mean(s.view(-1)[0], self.args.n_estimates)
                     self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
         else:
             score_mean_t = 0
@@ -347,6 +346,7 @@ class OurModelWrapper:
                     score_sum += score.sum(0)
             
             n_data += n_estimates * x.shape[0]
+        assert n_data == self.args.subsample * n_estimates, (n_data, self.args.subsample, n_estimates)
         score_mean = score_sum / n_data
         return score_mean
 
