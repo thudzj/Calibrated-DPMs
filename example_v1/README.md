@@ -38,6 +38,7 @@ CUDA_VISIBLE_DEVICES=1 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-27 13:32:23,196 - FID: 3.3731234833595067
     INFO - diffusion.py - 2022-10-27 16:51:36,634 - FID: 3.2697309904325493
 
+#### subsample the training data for estimating mean score (it seems that using at least 10k training samples is necessary)
 ```
 CUDA_VISIBLE_DEVICES=1 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-ss20000 --score_mean --subsample 20000; \
 CUDA_VISIBLE_DEVICES=1 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-ss10000 --score_mean --subsample 10000; \
@@ -57,6 +58,7 @@ CUDA_VISIBLE_DEVICES=5 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-28 12:10:36,212 - FID: 71.10145469903227
     INFO - diffusion.py - 2022-10-28 12:21:33,887 - FID: 160.91111787111993
 
+#### check how the number of MC samples affect the mean score and the resulting generation (no gains compared to the above FID 3.3067414381310414)
 ```
 CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-n_est2 --score_mean --n_estimates 2; \
 CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-n_est3 --score_mean --n_estimates 3; \
@@ -68,6 +70,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-27 19:44:06,947 - FID: 3.3083470529578562
     INFO - diffusion.py - 2022-10-27 20:45:31,801 - FID: 3.348334196572523
 
+#### estimate the mean score with the generations
 ```
 CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-gen_based --score_mean --which_for_score_mean experiments/cifar10/image_samples/original; \
 CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=50 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-gen_based-50 --score_mean --which_for_score_mean experiments/cifar10/image_samples/original50; \
@@ -78,7 +81,8 @@ CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-27 12:09:28,164 - FID: 3.505615465916094
     INFO - diffusion.py - 2022-10-27 13:45:38,567 - FID: 3.4959770107498116
     INFO - diffusion.py - 2022-10-27 16:59:27,327 - FID: 3.463634532725905
-    
+
+#### estimate the mean score with > 50k generations (marginal or even no gains compared to the above 3.532547063222637)
 ```
 CUDA_VISIBLE_DEVICES=7 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-gen_based-100k --score_mean --which_for_score_mean experiments/cifar10/image_samples/original-500k --subsample 100000; \
 CUDA_VISIBLE_DEVICES=7 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-gen_based-200k --score_mean --which_for_score_mean experiments/cifar10/image_samples/original-500k --subsample 200000; \
