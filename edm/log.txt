@@ -1,0 +1,13 @@
+# the baseline (cond)
+torchrun --standalone --nproc_per_node=4 generate.py --outdir=generations/cifar10/baseline --seeds=0-49999 --subdirs  --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; torchrun --standalone --nproc_per_node=4 fid.py calc --images=generations/cifar10/baseline --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+1.84966
+
+# the baseline (uncond)
+torchrun --standalone --nproc_per_node=4 generate.py --outdir=generations/cifar10/baseline-uncond --seeds=0-49999 --subdirs  --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; torchrun --standalone --nproc_per_node=4 fid.py calc --images=generations/cifar10/baseline-uncond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+1.96114
+
+# our
+python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond --seeds=0-49999 --subdirs --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; torchrun --standalone --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+1.94947
+python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond --seeds=0-49999 --subdirs --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; torchrun --standalone --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+1.82819

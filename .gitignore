@@ -1,3 +1,7 @@
 *__pycache__
 *exp*
 *fid_stats
+edm/datasets
+edm/downloads
+edm/fid-refs
+edm/generations
