@@ -11,3 +11,57 @@ python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 generate.
 1.94947
 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond --seeds=0-49999 --subdirs --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; torchrun --standalone --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
 1.82819
+
+
+-------5 steps----------
+CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-5s --seeds=0-49999 --subdirs --steps=5 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-5s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    35.5575
+CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-uncond-5s --seeds=0-49999 --subdirs --steps=5 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-uncond-5s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    37.771
+CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12348 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond-5s --seeds=0-49999 --subdirs --steps=5 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12348 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond-5s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    36.5632
+    +flip 36.4066
+    +n 79.9267
+CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12347 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond-5s --seeds=0-49999 --subdirs --steps=5 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12347 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond-5s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    38.0835
+    +flip 38.1313
+    +n 42.3923
+ --ve--
+  CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-5s-ve --seeds=0-49999 --subdirs --steps=5 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-ve.pkl; CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-5s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    34.872
+  CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-uncond-5s-ve --seeds=0-49999 --subdirs --steps=5 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-ve.pkl; CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-uncond-5s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    37.1496
+  CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12348 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond-5s-ve --seeds=0-49999 --subdirs --steps=5 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-ve.pkl; CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12348 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond-5s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    79.0834
+  CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12347 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond-5s-ve --seeds=0-49999 --subdirs --steps=5 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-ve.pkl; CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12347 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond-5s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    41.0497
+
+-------9 steps----------
+CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12315 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-9s --seeds=0-49999 --subdirs --steps=9 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 11345 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-9s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.11388
+CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12316 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-uncond-9s --seeds=0-49999 --subdirs --steps=9 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 11346 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-uncond-9s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.24078
+CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12318 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond-9s --seeds=0-49999 --subdirs --steps=9 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 11348 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond-9s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.18946
+    +flip 3.16041
+    +n 3.26711
+CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12317 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond-9s --seeds=0-49999 --subdirs --steps=9 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 11347 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond-9s --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.27683
+    +flip 3.26835
+    +n 3.27516
+ --ve--
+  CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 11345 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-9s-ve --seeds=0-49999 --subdirs --steps=9 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-ve.pkl; CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 11345 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-9s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.23255
+  CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 11346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/baseline-uncond-9s-ve --seeds=0-49999 --subdirs --steps=9 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-ve.pkl; CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 11346 --nproc_per_node=1 fid.py calc --images=generations/cifar10/baseline-uncond-9s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.41662
+  CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 11348 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond-9s-ve --seeds=0-49999 --subdirs --steps=9 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-ve.pkl; CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 11348 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond-9s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.39873
+  CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 11347 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond-9s-ve --seeds=0-49999 --subdirs --steps=9 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-ve.pkl; CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 11347 --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond-9s-ve --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
+    3.46109
+
+**********imagenet**********
+python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generations/imagenet/baseline --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl; \
+    python -m torch.distributed.run --nproc_per_node=4 fid.py calc --images=generations/imagenet/baseline --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/imagenet-64x64.npz
+
+python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generations/imagenet/sec1.4 --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl; \
+    python -m torch.distributed.run --nproc_per_node=4 fid.py calc --images=generations/imagenet/sec1.4 --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/imagenet-64x64.npz

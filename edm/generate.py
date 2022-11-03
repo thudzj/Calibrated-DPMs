@@ -118,7 +118,7 @@ class OurModelWrapper:
             for _ in range(n_estimates):
                 n = torch.randn_like(x) * sigma
                 D_xn = self._net(x + n, sigma, y if self.is_cond else None)
-                score = x - D_xn
+                score = x + n - D_xn
                 if score_sum is None:
                     if self.is_cond:
                         score_sum = torch.einsum('bc,b...->c...', y, score)
