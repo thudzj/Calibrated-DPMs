@@ -41,6 +41,7 @@ from torch.utils import tensorboard
 from torchvision.utils import make_grid, save_image
 from utils import save_checkpoint, restore_checkpoint
 from dpm_solver import NoiseScheduleVP, OurModelWrapper
+import shutil
 
 FLAGS = flags.FLAGS
 
@@ -204,6 +205,12 @@ def evaluate(config,
   state = dict(optimizer=optimizer, model=score_model, ema=ema, step=0)
 
   checkpoint_dir = os.path.join(workdir, "checkpoints")
+  
+  # hack the ckpts
+  if not os.path.exists(checkpoint_dir + '/checkpoint_8.pth'):
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    print("copying ckpt from", '/'.join(workdir.split('/')[:-1]) + "/cifar10_ddpmpp_deep_continuous_steps/checkpoints/checkpoint_8.pth", "to", checkpoint_dir + '/checkpoint_8.pth')
+    shutil.copy('/'.join(workdir.split('/')[:-1]) + "/cifar10_ddpmpp_deep_continuous_steps/checkpoints/checkpoint_8.pth", checkpoint_dir + '/checkpoint_8.pth')
 
   # Setup SDEs
   if config.training.sde.lower() == 'vpsde':
