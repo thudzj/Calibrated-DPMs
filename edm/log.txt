@@ -6,7 +6,7 @@ torchrun --standalone --nproc_per_node=4 generate.py --outdir=generations/cifar1
 torchrun --standalone --nproc_per_node=4 generate.py --outdir=generations/cifar10/baseline-uncond --seeds=0-49999 --subdirs  --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; torchrun --standalone --nproc_per_node=4 fid.py calc --images=generations/cifar10/baseline-uncond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
 1.96114
 
-# our
+# our (the results is erronous as we have not add 'n')
 python -m torch.distributed.run --master_port 12345 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-uncond --seeds=0-49999 --subdirs --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl; torchrun --standalone --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-uncond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
 1.94947
 python -m torch.distributed.run --master_port 12346 --nproc_per_node=1 generate.py --outdir=generations/cifar10/sec1.4-cond --seeds=0-49999 --subdirs --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl; torchrun --standalone --nproc_per_node=1 fid.py calc --images=generations/cifar10/sec1.4-cond --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
@@ -62,6 +62,7 @@ CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12317 --npr
 **********imagenet**********
 python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generations/imagenet/baseline --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl; \
     python -m torch.distributed.run --nproc_per_node=4 fid.py calc --images=generations/imagenet/baseline --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/imagenet-64x64.npz
+    1.42301
 
 python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generations/imagenet/sec1.4 --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl; \
     python -m torch.distributed.run --nproc_per_node=4 fid.py calc --images=generations/imagenet/sec1.4 --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/imagenet-64x64.npz

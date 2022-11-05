@@ -1,0 +1,19 @@
+```
+cd score_sde_pytorch;
+```
+
+### baseline 
+```
+sh sample.sh
+```
+ckpt-8 --- inception_score: 9.482309e+00, FID: 4.633151e+00, KID: 1.793954e-03
+
+
+### sec1.4
+```
+sh sample.sh
+```
+ckpt-8 --- inception_score: 9.328201e+00, FID: 5.042410e+00, KID: 2.191860e-03 
+ckpt-8 --- inception_score: 9.686071e+00, FID: 4.552195e+00, KID: 1.847403e-03 
+ckpt-8 --- inception_score: 9.595750e+00, FID: 4.585929e+00, KID: 1.821678e-03
+ckpt-8 --- inception_score: 9.690313e+00, FID: 4.517950e+00, KID: 1.833115e-03
