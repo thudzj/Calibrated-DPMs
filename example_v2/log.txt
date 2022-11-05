@@ -24,47 +24,51 @@ ckpt-8 --- inception_score: 9.690313e+00, FID: 4.517950e+00, KID: 1.833115e-03
 CUDA_VISIBLE_DEVICES=0 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe12" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=12 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.255441e+00, FID: 1.079415e+01, KID: 6.580107e-03
 
 CUDA_VISIBLE_DEVICES=1 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe18" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=18 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.508517e+00, FID: 2.878853e+00, KID: 9.059492e-04
 
 CUDA_VISIBLE_DEVICES=2 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe24" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=24 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.527629e+00, FID: 2.689343e+00, KID: 8.795991e-04
 
 CUDA_VISIBLE_DEVICES=3 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe30" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=30 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.468838e+00, FID: 2.663257e+00, KID: 8.686927e-04
 
 CUDA_VISIBLE_DEVICES=0 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe36" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=36 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
@@ -74,7 +78,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 CUDA_VISIBLE_DEVICES=1 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe42" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=42 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
@@ -84,7 +88,7 @@ CUDA_VISIBLE_DEVICES=1 python main.py \
 CUDA_VISIBLE_DEVICES=2 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe48" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=48 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=3 \
@@ -96,7 +100,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py \
 CUDA_VISIBLE_DEVICES=0 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe12_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=12 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -106,7 +110,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 CUDA_VISIBLE_DEVICES=1 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe18_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=18 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -116,7 +120,7 @@ CUDA_VISIBLE_DEVICES=1 python main.py \
 CUDA_VISIBLE_DEVICES=2 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe24_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=24 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -126,7 +130,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py \
 CUDA_VISIBLE_DEVICES=3 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe30_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=30 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -136,7 +140,7 @@ CUDA_VISIBLE_DEVICES=3 python main.py \
 CUDA_VISIBLE_DEVICES=0 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe36_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=36 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -146,7 +150,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 CUDA_VISIBLE_DEVICES=1 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe42_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=42 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
@@ -156,7 +160,7 @@ CUDA_VISIBLE_DEVICES=1 python main.py \
 CUDA_VISIBLE_DEVICES=2 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
     --workdir "experiments/cifar10_ddpmpp_deep_continuous_steps_nfe48_order2" \
-    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
     --config.sampling.steps=48 \
     --config.sampling.skip_type="logSNR" \
     --config.sampling.dpm_solver_order=2 \
