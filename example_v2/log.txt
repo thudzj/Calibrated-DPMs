@@ -78,7 +78,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
     baseline: ckpt-8 --- inception_score: 9.585458e+00, FID: 2.597773e+00, KID: 8.494878e-04
-    sec1.4: ckpt-8 --- inception_score: 9.605590e+00, FID: 2.583377e+00, KID: 8.480622e-04
+    sec1.4: ckpt-8 --- inception_score: 9.503786e+00, FID: 2.561249e+00, KID: 8.394256e-04
 
 CUDA_VISIBLE_DEVICES=1 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
@@ -90,7 +90,7 @@ CUDA_VISIBLE_DEVICES=1 python main.py \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
     baseline: ckpt-8 --- inception_score: 9.466428e+00, FID: 2.636372e+00, KID: 8.513709e-04
-    sec1.4: ckpt-8 --- inception_score: 9.523693e+00, FID: 2.590096e+00, KID: 8.304971e-04
+    sec1.4: ckpt-8 --- inception_score: 9.527194e+00, FID: 2.568467e+00, KID: 8.383478e-04
 
 CUDA_VISIBLE_DEVICES=2 python main.py \
     --config "configs/vp/cifar10_ddpmpp_deep_continuous.py" --mode "eval" \
@@ -102,7 +102,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
     baseline: ckpt-8 --- inception_score: 9.478308e+00, FID: 2.595402e+00, KID: 8.510546e-04
-    sec1.4: ckpt-8 --- inception_score: 9.526606e+00, FID: 2.550589e+00, KID: 7.878810e-04
+    sec1.4: ckpt-8 --- inception_score: 9.582434e+00, FID: 2.581818e+00, KID: 8.727409e-04
 
 
 ### DPM-solver-2 for Table 1 in dpm-solver paper
