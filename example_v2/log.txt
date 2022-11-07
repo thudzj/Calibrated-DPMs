@@ -200,3 +200,50 @@ CUDA_VISIBLE_DEVICES=1 python main.py \
     --config.sampling.dpm_solver_method="singlestep" \
     --config.eval.batch_size=1000
     ckpt-8 --- inception_score: 9.543901e+00, FID: 5.683737e+00, KID: 2.662795e-03
+
+
+CUDA_VISIBLE_DEVICES=2 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps_nfe12" \
+    --config.sampling.eps=1e-4 --config.sampling.method="dpm_solver" \
+    --config.sampling.steps=12 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep_fixed" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.411224e+00, FID: 6.995338e+00, KID: 3.122614e-03
+    
+
+CUDA_VISIBLE_DEVICES=3 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps_nfe12_sec14" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
+    --config.sampling.steps=12 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep_fixed" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.239246e+00, FID: 1.160379e+01, KID: 7.089943e-03
+
+CUDA_VISIBLE_DEVICES=0 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps_nfe18" \
+    --config.sampling.eps=1e-4 --config.sampling.method="dpm_solver" \
+    --config.sampling.steps=18 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep_fixed" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.485415e+00, FID: 3.060307e+00, KID: 1.042536e-03
+
+CUDA_VISIBLE_DEVICES=1 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps_nfe18_sec14" \
+    --config.sampling.eps=1e-4 --config.sampling.method="sec1.4" \
+    --config.sampling.steps=18 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep_fixed" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.477678e+00, FID: 3.160079e+00, KID: 1.136337e-03
+    
