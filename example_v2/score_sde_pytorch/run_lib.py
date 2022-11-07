@@ -209,8 +209,14 @@ def evaluate(config,
   # hack the ckpts
   if not os.path.exists(checkpoint_dir + '/checkpoint_8.pth'):
     os.makedirs(checkpoint_dir, exist_ok=True)
-    print("copying ckpt from", '/'.join(workdir.split('/')[:-1]) + "/cifar10_ddpmpp_deep_continuous_steps/checkpoints/checkpoint_8.pth", "to", checkpoint_dir + '/checkpoint_8.pth')
-    shutil.copy('/'.join(workdir.split('/')[:-1]) + "/cifar10_ddpmpp_deep_continuous_steps/checkpoints/checkpoint_8.pth", checkpoint_dir + '/checkpoint_8.pth')
+    if 'cifar10_ddpmpp_continuous_steps' in FLAGS.workdir:
+      original_workdir = '/cifar10_ddpmpp_continuous_steps/'
+    elif 'cifar10_ddpmpp_deep_continuous_steps' in FLAGS.workdir:
+      original_workdir = '/cifar10_ddpmpp_deep_continuous_steps/'
+    else:
+      assert False
+    print("copying ckpt from", '/'.join(workdir.split('/')[:-1]) + original_workdir + "checkpoints/checkpoint_8.pth", "to", checkpoint_dir + '/checkpoint_8.pth')
+    shutil.copy('/'.join(workdir.split('/')[:-1]) + original_workdir + "checkpoints/checkpoint_8.pth", checkpoint_dir + '/checkpoint_8.pth')
 
   # Setup SDEs
   if config.training.sde.lower() == 'vpsde':

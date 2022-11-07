@@ -175,3 +175,28 @@ CUDA_VISIBLE_DEVICES=2 python main.py \
     --config.sampling.dpm_solver_order=2 \
     --config.sampling.dpm_solver_method="singlestep_fixed" \
     --config.eval.batch_size=1000
+
+
+### non-deep ckpt
+CUDA_VISIBLE_DEVICES=0 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps" \
+    --config.sampling.eps=1e-3 --config.sampling.method="dpm_solver" \
+    --config.sampling.steps=10 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.554894e+00, FID: 4.674020e+00, KID: 1.726396e-03
+
+
+CUDA_VISIBLE_DEVICES=1 python main.py \
+    --config "configs/vp/cifar10_ddpmpp_continuous.py" --mode "eval" \
+    --workdir "experiments/cifar10_ddpmpp_continuous_steps_sec14" \
+    --config.sampling.eps=1e-3 --config.sampling.method="sec1.4" \
+    --config.sampling.steps=10 \
+    --config.sampling.skip_type="logSNR" \
+    --config.sampling.dpm_solver_order=3 \
+    --config.sampling.dpm_solver_method="singlestep" \
+    --config.eval.batch_size=1000
+    ckpt-8 --- inception_score: 9.543901e+00, FID: 5.683737e+00, KID: 2.662795e-03
