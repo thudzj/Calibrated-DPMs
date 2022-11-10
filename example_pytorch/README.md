@@ -48,6 +48,7 @@ CUDA_VISIBLE_DEVICES=2 python main.py --config celeba.yml --exp=experiments/cele
 INFO - diffusion.py - 2022-11-10 11:47:56,949 - FID: 6.693164847189053
 ```
 
+### sec1.4
 ```
 CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4 --score_mean 
 INFO - diffusion.py - 2022-11-10 13:41:13,447 - FID: 2.30422762078814
