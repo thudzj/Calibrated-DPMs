@@ -256,6 +256,7 @@ class OurModelWrapper:
         else:
             raise ValueError("Unsupported skip_type {}, need to be 'logSNR' or 'time_uniform' or 'time_quadratic'".format(skip_type))
 
+    @torch.no_grad()
     def __call__(self, x, t):
         t_ = t.view(-1)[0].item()
         
@@ -272,14 +273,16 @@ class OurModelWrapper:
             else:
                 score_mean_t = self.estimate_score_mean(t.view(-1)[0])
                 self.score_mean_dict[str("{:.9f}".format(t_))] = score_mean_t
-            if str("{:.9f}".format(s_)) in self.score_mean_dict:
-                score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
-            else:
-                score_mean_s = self.estimate_score_mean(s.view(-1)[0])
-                self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
+            if self.tradeoff < 1:
+                if str("{:.9f}".format(s_)) in self.score_mean_dict:
+                    score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
+                else:
+                    score_mean_s = self.estimate_score_mean(s.view(-1)[0])
+                    self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
         else:
             score_mean_t = 0
-            score_mean_s = 0
+            if self.tradeoff < 1:
+                score_mean_s = 0
 
         # fetch alpha and sigma for 's' and 't'
         ns = self.noise_schedule

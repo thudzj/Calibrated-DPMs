@@ -34,7 +34,7 @@ diffusion:
     num_diffusion_timesteps: 1000
 
 training:
-    batch_size: 128
+    batch_size: 200
     n_epochs: 10000
     n_iters: 5000000
     snapshot_freq: 5000
@@ -44,11 +44,11 @@ sampling:
     total_N: 1000
     schedule: "linear"
     time_input_type: '1'
-    batch_size: 500
+    batch_size: 200
     last_only: True
     fid_stats_dir: "fid_stats/fid_stats_celeba64_train_50000_ddim.npz"
     fid_total_samples: 50000
-    fid_batch_size: 1000
+    fid_batch_size: 200
     cond_class: false
     classifier_scale: 0.0
 
