@@ -40,9 +40,17 @@ CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cif
 
 ### baseline
 ```
+CUDA_VISIBLE_DEVICES=0 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=50 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original-50
+INFO - diffusion.py - 2022-11-10 15:16:39,981 - FID: 2.8079302403918973
+
 CUDA_VISIBLE_DEVICES=0 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original
 INFO - diffusion.py - 2022-11-10 11:09:26,018 - FID: 2.7838383327336658
 
+CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=15 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original-15
+INFO - diffusion.py - 2022-11-10 14:18:23,657 - FID: 2.9580638547100193
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original-12
+INFO - diffusion.py - 2022-11-10 14:10:58,994 - FID: 4.059128224989905
 
 CUDA_VISIBLE_DEVICES=2 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=10 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original-10
 INFO - diffusion.py - 2022-11-10 11:47:56,949 - FID: 6.693164847189053
@@ -50,8 +58,17 @@ INFO - diffusion.py - 2022-11-10 11:47:56,949 - FID: 6.693164847189053
 
 ### sec1.4
 ```
+CUDA_VISIBLE_DEVICES=3 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=50 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-50 --score_mean 
+INFO - diffusion.py - 2022-11-10 19:56:29,272 - FID: 2.491003563268066
+
 CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4 --score_mean 
 INFO - diffusion.py - 2022-11-10 13:41:13,447 - FID: 2.30422762078814
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=15 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-15 --score_mean 
+INFO - diffusion.py - 2022-11-10 16:30:00,051 - FID: 2.454641486144908
+
+CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-12 --score_mean 
+INFO - diffusion.py - 2022-11-10 16:12:21,527 - FID: 3.3343069799816476
 
 CUDA_VISIBLE_DEVICES=3 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=10 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4-10 --score_mean 
 INFO - diffusion.py - 2022-11-10 13:25:54,331 - FID: 4.586808830224896
