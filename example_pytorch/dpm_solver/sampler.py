@@ -5,6 +5,11 @@ import math, os, tqdm
 import torch.utils.data as data
 from datasets import get_dataset, data_transform, inverse_data_transform
 
+from torchvision.datasets import ImageFolder
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Union
+import torchvision.transforms as transforms
+
+
 
 class NoiseScheduleVP:
     def __init__(self, schedule='linear'):
@@ -204,16 +209,31 @@ def model_wrapper(model, noise_schedule=None, is_cond_classifier=False, classifi
             if y is None:
                 raise ValueError("For classifier guidance, the label y has to be in the input.")
             t_discrete = get_model_input_time(t_continuous)
-            noise_uncond = model(x, t_discrete, **model_kwargs)
+            noise_uncond = model(x, t_continuous, t_discrete, **model_kwargs)
             cond_grad = cond_fn(x, t_discrete, y)
             sigma_t = noise_schedule.marginal_std(t_continuous)
             dims = len(cond_grad.shape) - 1
             return noise_uncond - sigma_t[(...,) + (None,)*dims] * cond_grad
         else:
             t_discrete = get_model_input_time(t_continuous)
-            return model(x, t_discrete, **model_kwargs)
+            return model(x, t_continuous, t_discrete, **model_kwargs)
 
     return model_fn
+
+class GenDataset(ImageFolder):
+    def __init__(self,
+        root,
+        transform,
+    ):
+        super().__init__(
+            root=root,
+            transform=transform
+        )
+    
+    def find_classes(self, directory: str) -> Tuple[List[str], Dict[str, int]]:
+        classes = [""]
+        class_to_idx = {"": 0}
+        return classes, class_to_idx
 
 class OurModelWrapper:
     def __init__(self, noise_schedule, args, config, device,
@@ -227,88 +247,104 @@ class OurModelWrapper:
         self.score_mean = args.score_mean
         self.score_mean_dict = {}
         self.tradeoff = args.tradeoff
+        self.subsample = args.subsample
 
-        t_0 = eps
-        t_T = self.noise_schedule.T if T is None else T
-        self.timesteps = self.get_time_steps(skip_type=skip_type, t_T=t_T, t_0=t_0, N=steps, device=device)
-
-        dataset, _ = get_dataset(self.args, self.config)
+        # t_0 = eps
+        # t_T = self.noise_schedule.T if T is None else T
+        # self.timesteps = self.get_time_steps(skip_type=skip_type, t_T=t_T, t_0=t_0, N=steps, device=device)
+        
+        if hasattr(self.config.data, 'generations_dir') and self.config.data.generations_dir != "":
+            dataset = GenDataset(self.config.data.generations_dir,
+                transform=transforms.Compose(
+                    [
+                        transforms.Resize(config.data.image_size),
+                        transforms.CenterCrop(config.data.image_size),
+                        transforms.RandomHorizontalFlip(p=0.5),
+                        transforms.ToTensor(),
+                    ]
+                ))
+        else:
+            dataset, _ = get_dataset(self.args, self.config)
+        if self.subsample is None:
+            self.subsample = len(dataset)
+        idx = torch.randperm(len(dataset))[:self.subsample]
         self.data_loader = data.DataLoader(
-            dataset,
+            torch.utils.data.Subset(dataset, idx),
             batch_size=self.config.training.batch_size,
             shuffle=True,
             num_workers=self.config.data.num_workers,
         )
 
-    def get_time_steps(self, skip_type, t_T, t_0, N, device):
-        if skip_type == 'logSNR':
-            lambda_T = self.noise_schedule.marginal_lambda(torch.tensor(t_T).to(device))
-            lambda_0 = self.noise_schedule.marginal_lambda(torch.tensor(t_0).to(device))
-            logSNR_steps = torch.linspace(lambda_T, lambda_0, N + 1).to(device)
-            return self.noise_schedule.inverse_lambda(logSNR_steps)
-        elif skip_type == 'time_uniform':
-            return torch.linspace(t_T, t_0, N + 1).to(device)
-        elif skip_type == 'time_quadratic':
-            t = torch.linspace(t_0, t_T, 10000000).to(device)
-            quadratic_t = torch.sqrt(t)
-            quadratic_steps = torch.linspace(quadratic_t[0], quadratic_t[-1], N + 1).to(device)
-            return torch.flip(torch.cat([t[torch.searchsorted(quadratic_t, quadratic_steps)[:-1]], t_T * torch.ones((1,)).to(device)], dim=0), dims=[0])
-        else:
-            raise ValueError("Unsupported skip_type {}, need to be 'logSNR' or 'time_uniform' or 'time_quadratic'".format(skip_type))
+    # def get_time_steps(self, skip_type, t_T, t_0, N, device):
+    #     if skip_type == 'logSNR':
+    #         lambda_T = self.noise_schedule.marginal_lambda(torch.tensor(t_T).to(device))
+    #         lambda_0 = self.noise_schedule.marginal_lambda(torch.tensor(t_0).to(device))
+    #         logSNR_steps = torch.linspace(lambda_T, lambda_0, N + 1).to(device)
+    #         return self.noise_schedule.inverse_lambda(logSNR_steps)
+    #     elif skip_type == 'time_uniform':
+    #         return torch.linspace(t_T, t_0, N + 1).to(device)
+    #     elif skip_type == 'time_quadratic':
+    #         t = torch.linspace(t_0, t_T, 10000000).to(device)
+    #         quadratic_t = torch.sqrt(t)
+    #         quadratic_steps = torch.linspace(quadratic_t[0], quadratic_t[-1], N + 1).to(device)
+    #         return torch.flip(torch.cat([t[torch.searchsorted(quadratic_t, quadratic_steps)[:-1]], t_T * torch.ones((1,)).to(device)], dim=0), dims=[0])
+    #     else:
+    #         raise ValueError("Unsupported skip_type {}, need to be 'logSNR' or 'time_uniform' or 'time_quadratic'".format(skip_type))
 
     @torch.no_grad()
-    def __call__(self, x, t):
+    def __call__(self, x, t, t_discrete):
         t_ = t.view(-1)[0].item()
         
-        s_idx = 0
-        while self.timesteps[s_idx] >= t_:
-            s_idx += 1
-        s_idx = min(s_idx, len(self.timesteps) - 1)
-        s_ = self.timesteps[s_idx].item()
-        s = torch.ones(x.shape[0], device=x.device) * s_
+        # s_idx = 0
+        # while self.timesteps[s_idx] >= t_:
+        #     s_idx += 1
+        # s_idx = min(s_idx, len(self.timesteps) - 1)
+        # s_ = self.timesteps[s_idx].item()
+        # s = torch.ones(x.shape[0], device=x.device) * s_
 
         if self.score_mean:
             if "{:.9f}".format(t_) in self.score_mean_dict:
                 score_mean_t = self.score_mean_dict[str("{:.9f}".format(t_))]
             else:
-                score_mean_t = self.estimate_score_mean(t.view(-1)[0])
+                score_mean_t = self.estimate_score_mean(t.view(-1)[0], t_discrete.view(-1)[0])
                 self.score_mean_dict[str("{:.9f}".format(t_))] = score_mean_t
-            if self.tradeoff < 1:
-                if str("{:.9f}".format(s_)) in self.score_mean_dict:
-                    score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
-                else:
-                    score_mean_s = self.estimate_score_mean(s.view(-1)[0])
-                    self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
+            # if self.tradeoff < 1:
+            #     if str("{:.9f}".format(s_)) in self.score_mean_dict:
+            #         score_mean_s = self.score_mean_dict[str("{:.9f}".format(s_))]
+            #     else:
+            #         score_mean_s = self.estimate_score_mean(s.view(-1)[0])
+            #         self.score_mean_dict[str("{:.9f}".format(s_))] = score_mean_s
         else:
             score_mean_t = 0
-            if self.tradeoff < 1:
-                score_mean_s = 0
+            # if self.tradeoff < 1:
+            #     score_mean_s = 0
 
         # fetch alpha and sigma for 's' and 't'
-        ns = self.noise_schedule
-        dims = len(x.shape) - 1
-        α_s, α_t = ns.marginal_log_mean_coeff(s).exp(), ns.marginal_log_mean_coeff(t).exp()
-        σ_s, σ_t = ns.marginal_std(s), ns.marginal_std(t)
+        # ns = self.noise_schedule
+        # dims = len(x.shape) - 1
+        # α_s, α_t = ns.marginal_log_mean_coeff(s).exp(), ns.marginal_log_mean_coeff(t).exp()
+        # σ_s, σ_t = ns.marginal_std(s), ns.marginal_std(t)
 
-        σ2_t = σ_t ** 2
-        σ2_s = σ_s ** 2
+        # σ2_t = σ_t ** 2
+        # σ2_s = σ_s ** 2
 
-        α_ts =  α_t / α_s
-        r_ts = 1 / α_ts * σ_t / σ_s
-        σ2_ts = σ2_t - α_ts ** 2 * σ2_s
+        # α_ts =  α_t / α_s
+        # r_ts = 1 / α_ts * σ_t / σ_s
+        # σ2_ts = σ2_t - α_ts ** 2 * σ2_s
 
-        score_t_one_step = self._model_fn(x, t) - score_mean_t
+        score_t_one_step = self._model_fn(x, t_discrete) - score_mean_t
 
-        if self.tradeoff < 1:
-            μ_hat_st = (x - score_t_one_step * σ2_t[(...,) + (None,)*dims] / σ_t[(...,) + (None,)*dims]) / α_ts[(...,) + (None,)*dims]
-            # σ2_hat_ts = σ2_s * σ2_ts / σ2_t # this is unused currently
-            score_t_two_step = r_ts[(...,) + (None,)*dims] * (self._model_fn(μ_hat_st, s) - score_mean_s)
-            score = score_t_one_step * self.tradeoff + score_t_two_step * (1 - self.tradeoff)
-        else:
-            score = score_t_one_step
+        # if self.tradeoff < 1:
+        #     assert False, "the following code has bot been revised, especially the input time s to the model"
+        #     μ_hat_st = (x - score_t_one_step * σ2_t[(...,) + (None,)*dims] / σ_t[(...,) + (None,)*dims]) / α_ts[(...,) + (None,)*dims]
+        #     # σ2_hat_ts = σ2_s * σ2_ts / σ2_t # this is unused currently
+        #     score_t_two_step = r_ts[(...,) + (None,)*dims] * (self._model_fn(μ_hat_st, s) - score_mean_s)
+        #     score = score_t_one_step * self.tradeoff + score_t_two_step * (1 - self.tradeoff)
+        # else:
+        score = score_t_one_step
         return score
 
-    def estimate_score_mean(self, t, n_estimates=1):
+    def estimate_score_mean(self, t, t_discrete, n_estimates=1):
         score_sum = None
         n_data = 0
         for (x, _) in tqdm.tqdm(
@@ -317,11 +353,12 @@ class OurModelWrapper:
             x = data_transform(self.config, x)
 
             vec_t = torch.ones(x.shape[0], device=x.device) * t
+            vec_t_discrete = torch.ones(x.shape[0], device=x.device) * t_discrete
             mean, std = self.noise_schedule.marginal_log_mean_coeff(vec_t).exp(), self.noise_schedule.marginal_std(vec_t)
             
             for _ in range(n_estimates):
                 perturbed_data = x * mean[:, None, None, None] + std[:, None, None, None] * torch.randn_like(x)
-                score = self._model_fn(perturbed_data, vec_t)
+                score = self._model_fn(perturbed_data, vec_t_discrete)
                 if score_sum is None:
                     score_sum = score.sum(0)
                 else:

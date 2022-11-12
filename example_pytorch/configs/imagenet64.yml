@@ -9,6 +9,10 @@ data:
     rescaled: true
     num_workers: 4
     num_classes: 1000
+    root: "/data/LargeData/Large/ImageNet" #"/home/dzj/imagenet64/" #"
+    loader_type: "" #"custom" #None 
+    generations_dir: "" #"experiments/imagenet64/image_samples/original-10/"
+
 
 model:
     model_type: "improved_ddpm"
@@ -37,11 +41,18 @@ diffusion:
     beta_end: 0.02
     num_diffusion_timesteps: 1000
 
+training:
+    batch_size: 200
+    n_epochs: 10000
+    n_iters: 5000000
+    snapshot_freq: 5000
+    validation_freq: 20000
+
 sampling:
     total_N: 4000
     schedule: "cosine"
-    time_input_type: '1'
-    batch_size: 500
+    time_input_type: '2'
+    batch_size: 200
     last_only: True
     fid_stats_dir: "fid_stats/fid_stats_imagenet64_train.npz"
     fid_total_samples: 50000

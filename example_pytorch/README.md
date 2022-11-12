@@ -74,7 +74,36 @@ CUDA_VISIBLE_DEVICES=3 python main.py --config celeba.yml --exp=experiments/cele
 INFO - diffusion.py - 2022-11-10 13:25:54,331 - FID: 4.586808830224896
 ```
 
+## ImageNet64
 
+### baseline
+```
+CUDA_VISIBLE_DEVICES=0 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=10 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i original-10
+INFO - diffusion.py - 2022-11-11 02:55:00,970 - FID: 24.85932038951563
+
+CUDA_VISIBLE_DEVICES=0 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i original-12
+INFO - diffusion.py - 2022-11-11 03:30:50,157 - FID: 20.108340748848832
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=15 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i original-15
+INFO - diffusion.py - 2022-11-11 03:39:56,461 - FID: 19.14349412824413
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i original-20
+INFO - diffusion.py - 2022-11-11 04:36:32,958 - FID: 18.457345889932753
+```
+
+### sec1.4
+```
+CUDA_VISIBLE_DEVICES=3 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=10 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i sec1.4-10 --score_mean --subsample 200000
+INFO - diffusion.py - 2022-11-12 10:21:46,446 - FID: 25.772323133418922
+
+CUDA_VISIBLE_DEVICES=0 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i sec1.4-12 --score_mean --subsample 200000
+INFO - diffusion.py - 2022-11-12 10:48:44,226 - FID: 20.355067868866513
+
+CUDA_VISIBLE_DEVICES=1 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=15 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i sec1.4-15 --score_mean --subsample 200000
+INFO - diffusion.py - 2022-11-12 11:44:29,159 - FID: 19.175664565095246
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-3 --dpm_solver_fast -i sec1.4-20 --score_mean --subsample 200000
+```
 
 ## lsun_bedroom
 

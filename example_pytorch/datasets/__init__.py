@@ -3,12 +3,15 @@ import torch
 import numbers
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR10, ImageFolder
+from torchvision.datasets.folder import default_loader, IMG_EXTENSIONS
 from datasets.celeba import CelebA
 from datasets.ffhq import FFHQ
 from datasets.lsun import LSUN
 from torch.utils.data import Subset
 import numpy as np
+from PIL import Image
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Union
 
 
 class Crop(object):
@@ -26,6 +29,51 @@ class Crop(object):
             self.x1, self.x2, self.y1, self.y2
         )
 
+class ImageDataset64(ImageFolder):
+    def __init__(self,
+        root: str,
+    ):
+        super().__init__(
+            root=root
+        )
+        self.resolution = 64
+    
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (sample, target) where target is class_index of the target class.
+        """
+        path, target = self.samples[index]
+        pil_image = self.loader(path)
+        # if self.transform is not None:
+        #     sample = self.transform(sample)
+        
+        # We are not on a new enough PIL to support the `reducing_gap`
+        # argument, which uses BOX downsampling at powers of two first.
+        # Thus, we do it by hand to improve downsample quality.
+        while min(*pil_image.size) >= 2 * self.resolution:
+            pil_image = pil_image.resize(
+                tuple(x // 2 for x in pil_image.size), resample=Image.BOX
+            )
+
+        scale = self.resolution / min(*pil_image.size)
+        pil_image = pil_image.resize(
+            tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+        )
+
+        arr = np.array(pil_image.convert("RGB"))
+        crop_y = (arr.shape[0] - self.resolution) // 2
+        crop_x = (arr.shape[1] - self.resolution) // 2
+        arr = arr[crop_y : crop_y + self.resolution, crop_x : crop_x + self.resolution]
+        arr = arr.astype(np.float32) / 255.
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return np.transpose(arr, [2, 0, 1]), target
 
 def get_dataset(args, config):
     if config.data.random_flip is False:
@@ -175,6 +223,68 @@ def get_dataset(args, config):
         )
         test_dataset = Subset(dataset, test_indices)
         dataset = Subset(dataset, train_indices)
+    
+    elif config.data.dataset == "IMAGENET64":
+        # if config.data.loader_type == 'custom':
+        #     from datasets.imagenet64 import ImageNetDownSample
+        #     if config.data.random_flip:
+        #         dataset = ImageNetDownSample(
+        #             root=config.data.root,
+        #             transform=transforms.Compose(
+        #                 [
+        #                     transforms.RandomHorizontalFlip(p=0.5),
+        #                     transforms.ToTensor(),
+        #                 ]
+        #             ),
+        #         )
+        #     else:
+        #         dataset = ImageNetDownSample(
+        #             root=config.data.root,
+        #             transform=transforms.Compose(
+        #                 [
+        #                     transforms.ToTensor(),
+        #                 ]
+        #             ),
+        #         )
+        #     test_dataset = None
+        # else:
+            train_folder = "{}/train".format(config.data.root)
+            val_folder = "{}/val".format(config.data.root)
+            if config.data.random_flip:
+                dataset = ImageDataset64(
+                    root=train_folder,
+                    # transform=transforms.Compose(
+                    #     [
+                    #         transforms.Resize(config.data.image_size, interpolation=transforms.InterpolationMode.BICUBIC), #
+                    #         transforms.CenterCrop(config.data.image_size),
+                    #         transforms.RandomHorizontalFlip(p=0.5),
+                    #         transforms.ToTensor(),
+                    #     ]
+                    # ),
+                )
+            else:
+                dataset = ImageDataset64(
+                    root=train_folder,
+                    # transform=transforms.Compose(
+                    #     [
+                    #         transforms.Resize(config.data.image_size, interpolation=transforms.InterpolationMode.BICUBIC), #interpolation=InterpolationMode.BICUBIC
+                    #         transforms.CenterCrop(config.data.image_size),
+                    #         transforms.ToTensor(),
+                    #     ]
+                    # ),
+                )
+
+            test_dataset = ImageDataset64(
+                root=val_folder,
+                # transform=transforms.Compose(
+                #     [
+                #         transforms.Resize(config.data.image_size, interpolation=transforms.InterpolationMode.BICUBIC), #interpolation=InterpolationMode.BICUBIC
+                #         transforms.CenterCrop(config.data.image_size),
+                #         transforms.ToTensor(),
+                #     ]
+                # ),
+            )
+
     else:
         dataset, test_dataset = None, None
 

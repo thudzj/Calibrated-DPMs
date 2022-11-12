@@ -574,9 +574,10 @@ class Diffusion(object):
                     if self.config.model.out_channels == 6:
                         return torch.split(out, 3, dim=1)[0]
                 return out
+            self.wrapper._model_fn = model_fn
             noise_schedule = NoiseScheduleVP(schedule=self.config.sampling.schedule)
             model_fn_continuous = model_wrapper(
-                model_fn,
+                self.wrapper,
                 noise_schedule,
                 is_cond_classifier=self.config.sampling.cond_class,
                 classifier_fn=classifier,
@@ -585,8 +586,7 @@ class Diffusion(object):
                 total_N=self.config.sampling.total_N,
                 model_kwargs=model_kwargs
             )
-            self.wrapper._model_fn = model_fn_continuous
-            dpm_solver = DPM_Solver(self.wrapper, noise_schedule)
+            dpm_solver = DPM_Solver(model_fn_continuous, noise_schedule)
             x = dpm_solver.sample(
                 x,
                 steps=self.args.timesteps,
