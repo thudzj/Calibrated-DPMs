@@ -226,27 +226,27 @@ def get_dataset(args, config):
     
     elif config.data.dataset == "IMAGENET64":
         # if config.data.loader_type == 'custom':
-        #     from datasets.imagenet64 import ImageNetDownSample
-        #     if config.data.random_flip:
-        #         dataset = ImageNetDownSample(
-        #             root=config.data.root,
-        #             transform=transforms.Compose(
-        #                 [
-        #                     transforms.RandomHorizontalFlip(p=0.5),
-        #                     transforms.ToTensor(),
-        #                 ]
-        #             ),
-        #         )
-        #     else:
-        #         dataset = ImageNetDownSample(
-        #             root=config.data.root,
-        #             transform=transforms.Compose(
-        #                 [
-        #                     transforms.ToTensor(),
-        #                 ]
-        #             ),
-        #         )
-        #     test_dataset = None
+            # from datasets.imagenet64 import ImageNetDownSample
+            # if config.data.random_flip:
+            #     dataset = ImageNetDownSample(
+            #         root=config.data.root,
+            #         transform=transforms.Compose(
+            #             [
+            #                 transforms.RandomHorizontalFlip(p=0.5),
+            #                 transforms.ToTensor(),
+            #             ]
+            #         ),
+            #     )
+            # else:
+            #     dataset = ImageNetDownSample(
+            #         root=config.data.root,
+            #         transform=transforms.Compose(
+            #             [
+            #                 transforms.ToTensor(),
+            #             ]
+            #         ),
+            #     )
+            # test_dataset = None
         # else:
             train_folder = "{}/train".format(config.data.root)
             val_folder = "{}/val".format(config.data.root)

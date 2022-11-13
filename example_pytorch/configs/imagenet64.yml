@@ -9,8 +9,8 @@ data:
     rescaled: true
     num_workers: 4
     num_classes: 1000
-    root: "/data/LargeData/Large/ImageNet" #"/home/dzj/imagenet64/" #"
-    loader_type: "" #"custom" #None 
+    root: "/data/LargeData/Large/ImageNet" #"/home/dzj/imagenet64/" #""/data/LargeData/Large/imagenet64" #"/home/dzj/imagenet64/" #"
+    # loader_type: "" #"custom" #None 
     generations_dir: "" #"experiments/imagenet64/image_samples/original-10/"
 
 
