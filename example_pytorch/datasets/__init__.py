@@ -159,7 +159,7 @@ def get_dataset(args, config):
         val_folder = "{}_val".format(config.data.category)
         if config.data.random_flip:
             dataset = LSUN(
-                root=os.path.join(args.exp, "datasets", "lsun"),
+                root=config.data.root,
                 classes=[train_folder],
                 transform=transforms.Compose(
                     [
@@ -172,7 +172,7 @@ def get_dataset(args, config):
             )
         else:
             dataset = LSUN(
-                root=os.path.join(args.exp, "datasets", "lsun"),
+                root=config.data.root,
                 classes=[train_folder],
                 transform=transforms.Compose(
                     [
@@ -183,17 +183,17 @@ def get_dataset(args, config):
                 ),
             )
 
-        test_dataset = LSUN(
-            root=os.path.join(args.exp, "datasets", "lsun"),
-            classes=[val_folder],
-            transform=transforms.Compose(
-                [
-                    transforms.Resize(config.data.image_size),
-                    transforms.CenterCrop(config.data.image_size),
-                    transforms.ToTensor(),
-                ]
-            ),
-        )
+        test_dataset = None #LSUN(
+        #     root=config.data.root,
+        #     classes=[val_folder],
+        #     transform=transforms.Compose(
+        #         [
+        #             transforms.Resize(config.data.image_size),
+        #             transforms.CenterCrop(config.data.image_size),
+        #             transforms.ToTensor(),
+        #         ]
+        #     ),
+        # )
 
     elif config.data.dataset == "FFHQ":
         if config.data.random_flip:
