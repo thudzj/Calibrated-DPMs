@@ -115,9 +115,11 @@ using the train_batch data: INFO - diffusion.py - 2022-11-12 20:29:11,099 - FID:
 ### baseline
 ```
 CUDA_VISIBLE_DEVICES=3 python main.py --config bedroom_guided.yml --exp=experiments/lsun_bedroom --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i original
+INFO - diffusion.py - 2022-11-16 01:55:21,777 - FID: 4.141296847025075
 ```
 
 ### sec1.4
 ```
 CUDA_VISIBLE_DEVICES=1 python main.py --config bedroom_guided.yml --exp=experiments/lsun_bedroom --sample --fid --timesteps=12 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i sec1.4 --score_mean --subsample 100000
+INFO - diffusion.py - 2022-11-16 13:59:12,294 - FID: 5.087107856952031
 ```
