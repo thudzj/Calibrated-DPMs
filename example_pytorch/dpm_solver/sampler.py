@@ -346,9 +346,11 @@ class OurModelWrapper:
 
     def estimate_score_mean(self, t, t_discrete, n_estimates=1):
         score_sum = None
+        score_norm_sum = 0
         n_data = 0
-        for (x, _) in tqdm.tqdm(
-                self.data_loader, desc="Computing score mean for time {}".format(t.item())):
+        # for (x, _) in tqdm.tqdm(
+        #         self.data_loader, desc="Computing score mean for time {}".format(t.item())):
+        for (x, _) in self.data_loader:
             x = x.to(self.device)
             x = data_transform(self.config, x)
 
@@ -363,9 +365,13 @@ class OurModelWrapper:
                     score_sum = score.sum(0)
                 else:
                     score_sum += score.sum(0)
+                score_norm_sum += score.flatten(1).norm(dim=1).sum()
             
             n_data += n_estimates * x.shape[0]
         score_mean = score_sum / n_data
+        score_norm_mean = score_norm_sum / n_data
+        score_mean_norm = score_mean.view(-1).norm()
+        print("t", t.item(), "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
         return score_mean
 
 class DPM_Solver:
