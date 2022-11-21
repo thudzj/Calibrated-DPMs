@@ -246,6 +246,7 @@ class OurModelWrapper:
         self.device = device
         self.score_mean = args.score_mean
         self.score_mean_dict = {}
+        self.flag = {}
         self.tradeoff = args.tradeoff
         self.subsample = args.subsample
 
@@ -332,7 +333,7 @@ class OurModelWrapper:
         # r_ts = 1 / α_ts * σ_t / σ_s
         # σ2_ts = σ2_t - α_ts ** 2 * σ2_s
 
-        score_t_one_step = self._model_fn(x, t_discrete) - score_mean_t
+        score_t_one_step = self._model_fn(x, t_discrete)
 
         # if self.tradeoff < 1:
         #     assert False, "the following code has bot been revised, especially the input time s to the model"
@@ -341,7 +342,13 @@ class OurModelWrapper:
         #     score_t_two_step = r_ts[(...,) + (None,)*dims] * (self._model_fn(μ_hat_st, s) - score_mean_s)
         #     score = score_t_one_step * self.tradeoff + score_t_two_step * (1 - self.tradeoff)
         # else:
-        score = score_t_one_step
+        score = score_t_one_step - score_mean_t
+
+        if not "{:.9f}".format(t_) in self.flag:
+            score_norm_mean = score_t_one_step.flatten(1).norm(dim=1).mean()
+            score_mean_t_norm = score_mean_t.view(-1).norm()
+            print("for genrated data; t", t[0].item(), "score_norm_mean", score_norm_mean.item(), "score_mean_t_norm", score_mean_t_norm.item(), "ratio", (score_norm_mean/score_mean_t_norm).item())
+            self.flag[str("{:.9f}".format(t_))] = 1
         return score
 
     def estimate_score_mean(self, t, t_discrete, n_estimates=1):
