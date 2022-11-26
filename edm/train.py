@@ -76,6 +76,9 @@ def parse_int_list(s):
 @click.option('--transfer',      help='Transfer learning from network pickle', metavar='PKL|URL',   type=str)
 @click.option('--resume',        help='Resume from previous training state', metavar='PT',          type=str)
 @click.option('-n', '--dry-run', help='Print training options and exit',                            is_flag=True)
+@click.option('--reg_on_mean',   help=' ', metavar='BOOL',                                          type=bool, default=False, show_default=True)
+@click.option('--cal_weight',    help=' ', metavar='FLOAT',                                         type=click.FloatRange(min=0, max=100), default=0, show_default=True)
+
 
 def main(**kwargs):
     """Train diffusion-based generative model using the techniques described in the
@@ -160,6 +163,10 @@ def main(**kwargs):
         seed = torch.randint(1 << 31, size=[], device=torch.device('cuda'))
         torch.distributed.broadcast(seed, src=0)
         c.seed = int(seed)
+    c.reg_on_mean = opts.reg_on_mean
+    if c.reg_on_mean and c.network_kwargs.class_name == 'training.networks.EDMPrecond':
+        c.loss_kwargs.cal_weight = opts.cal_weight
+        c.loss_kwargs.reg_on_mean = opts.reg_on_mean
 
     # Transfer learning and resume.
     if opts.transfer is not None:
@@ -167,6 +174,7 @@ def main(**kwargs):
             raise click.ClickException('--transfer and --resume cannot be specified at the same time')
         c.resume_pkl = opts.transfer
         c.ema_rampup_ratio = None
+        c.update(lr_rampup_kimg=0) # todo: check if this is necessary
     elif opts.resume is not None:
         match = re.fullmatch(r'training-state-(\d+).pt', os.path.basename(opts.resume))
         if not match or not os.path.isfile(opts.resume):

@@ -7,3 +7,4 @@ edm/fid-refs
 edm/generations
 example_v2/score_sde_pytorch/experiments/
 example_v2/score_sde_pytorch/assets
+edm/training-runs/

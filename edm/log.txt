@@ -66,3 +66,23 @@ python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generati
 
 python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generations/imagenet/sec1.4 --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method sec1.4 --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl; \
     python -m torch.distributed.run --nproc_per_node=4 fid.py calc --images=generations/imagenet/sec1.4 --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/imagenet-64x64.npz
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------fine tune----------------------------
+
+```
+torchrun --standalone --nproc_per_node=4 train.py --outdir=training-runs \
+    --data=datasets/cifar10-32x32.zip --cond=0 --arch=ddpmpp --batch-gpu=128 \
+    --duration=10 --lr 1e-4 --reg_on_mean 1 --cal_weight 0.1 \
+    --transfer=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
+```

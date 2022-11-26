@@ -46,6 +46,7 @@ def training_loop(
     resume_kimg         = 0,        # Start from the given training progress.
     cudnn_benchmark     = True,     # Enable torch.backends.cudnn.benchmark?
     device              = torch.device('cuda'),
+    reg_on_mean         = False,
 ):
     # Initialize.
     start_time = time.time()
@@ -73,6 +74,10 @@ def training_loop(
     dist.print0('Constructing network...')
     interface_kwargs = dict(img_resolution=dataset_obj.resolution, img_channels=dataset_obj.num_channels, label_dim=dataset_obj.label_dim)
     net = dnnlib.util.construct_class_by_name(**network_kwargs, **interface_kwargs) # subclass of torch.nn.Module
+    if reg_on_mean:
+        from training.networks import ModelWrapper
+        net = ModelWrapper(net, num_layers=4, embedding_type='positional')
+
     net.train().requires_grad_(True).to(device)
     if dist.get_rank() == 0:
         with torch.no_grad():
@@ -98,13 +103,13 @@ def training_loop(
             data = pickle.load(f)
         if dist.get_rank() == 0:
             torch.distributed.barrier() # other ranks follow
-        misc.copy_params_and_buffers(src_module=data['ema'], dst_module=net, require_all=False)
-        misc.copy_params_and_buffers(src_module=data['ema'], dst_module=ema, require_all=False)
+        misc.copy_params_and_buffers(src_module=data['ema'], dst_module=net.model, require_all=False)
+        misc.copy_params_and_buffers(src_module=data['ema'], dst_module=ema.model, require_all=False)
         del data # conserve memory
     if resume_state_dump:
         dist.print0(f'Loading training state from "{resume_state_dump}"...')
         data = torch.load(resume_state_dump, map_location=torch.device('cpu'))
-        misc.copy_params_and_buffers(src_module=data['net'], dst_module=net, require_all=True)
+        misc.copy_params_and_buffers(src_module=data['net'], dst_module=net.model, require_all=True)
         optimizer.load_state_dict(data['optimizer_state'])
         del data # conserve memory
 
@@ -128,8 +133,15 @@ def training_loop(
                 images = images.to(device).to(torch.float32) / 127.5 - 1
                 labels = labels.to(device)
                 loss = loss_fn(net=ddp, images=images, labels=labels, augment_pipe=augment_pipe)
-                training_stats.report('Loss/loss', loss)
-                loss.sum().mul(loss_scaling / batch_gpu_total).backward()
+                if reg_on_mean:
+                    loss, loss2, loss3 = loss
+                    training_stats.report('Loss/loss', loss)
+                    training_stats.report('Loss/loss2', loss2)
+                    training_stats.report('Loss/loss3', loss3)
+                    (loss + loss2 + loss3).sum().mul(loss_scaling / batch_gpu_total).backward()
+                else:
+                    training_stats.report('Loss/loss', loss)
+                    loss.sum().mul(loss_scaling / batch_gpu_total).backward()
 
         # Update weights.
         for g in optimizer.param_groups:

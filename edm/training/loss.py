@@ -64,10 +64,12 @@ class VELoss:
 
 @persistence.persistent_class
 class EDMLoss:
-    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5):
+    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5, reg_on_mean=False, cal_weight=0):
         self.P_mean = P_mean
         self.P_std = P_std
         self.sigma_data = sigma_data
+        self.reg_on_mean = reg_on_mean
+        self.cal_weight = cal_weight
 
     def __call__(self, net, images, labels=None, augment_pipe=None):
         rnd_normal = torch.randn([images.shape[0], 1, 1, 1], device=images.device)
@@ -75,8 +77,21 @@ class EDMLoss:
         weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
         y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(y) * sigma
-        D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
-        loss = weight * ((D_yn - y) ** 2)
+        if self.reg_on_mean:
+            D_yn, score_means = net(y + n, sigma, labels, augment_labels=augment_labels)
+            loss = weight * ((D_yn - y) ** 2)
+            
+            # to make the score net calibrated (weighted by an extra coefficient cal_weight)
+            score = (y + n - D_yn)
+            loss2 = (score_means.detach() + score)**2 * self.cal_weight * weight
+
+            # to make the small net approximate score mean
+            loss3 = (score_means - score.detach())**2
+
+            return loss, loss2, loss3
+        else:
+            D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
+            loss = weight * ((D_yn - y) ** 2)
         return loss
 
 #----------------------------------------------------------------------------

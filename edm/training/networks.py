@@ -671,3 +671,53 @@ class EDMPrecond(torch.nn.Module):
         return torch.as_tensor(sigma)
 
 #----------------------------------------------------------------------------
+
+@persistence.persistent_class
+class ModelWrapper(torch.nn.Module):
+    def __init__(self,
+        model,
+
+        channels            = 128,          # Base multiplier for the number of channels.
+        channel_mult_emb    = 4,            # Multiplier for the dimensionality of the embedding vector.
+        num_layers          = 3,            # Number of fc layers
+
+        embedding_type      = 'positional', # Timestep embedding type: 'positional' for DDPM++, 'fourier' for NCSN++.
+        channel_mult_noise  = 1,            # Timestep embedding size: 1 for DDPM++, 2 for NCSN++.
+    ):
+        assert embedding_type in ['fourier', 'positional']
+        super().__init__()
+
+        self.model = model
+        self.img_channels = model.img_channels
+        self.img_resolution = model.img_resolution
+        self.label_dim = model.label_dim
+
+
+        emb_channels = channels * channel_mult_emb
+        noise_channels = channels * channel_mult_noise
+        init = dict(init_mode='xavier_uniform')
+        # Mapping.
+        self.map_noise = PositionalEmbedding(num_channels=noise_channels, endpoint=True) if embedding_type == 'positional' else FourierEmbedding(num_channels=noise_channels)
+        sizes = [noise_channels, ] + [emb_channels, ] * (num_layers - 1) + [self.img_resolution**2 * 3, ]
+        layers = []
+        for i in range(len(sizes) - 2):
+            layers.append(Linear(sizes[i], sizes[i + 1], **init))
+            layers.append(torch.nn.SiLU())
+        layers.append(Linear(sizes[-2], sizes[-1], **init))
+        self.map_fn = torch.nn.Sequential(*layers)
+
+    def score_mean_est(self, sigma):
+        # Mapping.
+        sigma = sigma.to(torch.float32).reshape(-1, 1, 1, 1)
+        c_noise = sigma.log() / 4
+        emb = self.map_noise(c_noise.flatten())
+        emb = emb.reshape(emb.shape[0], 2, -1).flip(1).reshape(*emb.shape) # swap sin/cos
+        return self.map_fn(emb)
+
+    def forward(self, x, sigma, class_labels=None, force_fp32=False, **model_kwargs):
+        D_x = self.model(x, sigma, class_labels=class_labels, force_fp32=force_fp32, **model_kwargs)
+        score_means = self.score_mean_est(sigma)
+        return D_x, score_means.view_as(x)
+
+    def round_sigma(self, sigma):
+        return self.model.round_sigma(sigma)
