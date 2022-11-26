@@ -76,7 +76,7 @@ def training_loop(
     net = dnnlib.util.construct_class_by_name(**network_kwargs, **interface_kwargs) # subclass of torch.nn.Module
     if reg_on_mean:
         from training.networks import ModelWrapper
-        net = ModelWrapper(net, num_layers=4, embedding_type='positional')
+        net = ModelWrapper(net, num_layers=6, embedding_type='positional')
 
     net.train().requires_grad_(True).to(device)
     if dist.get_rank() == 0:

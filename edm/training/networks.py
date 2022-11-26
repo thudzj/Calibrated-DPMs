@@ -706,6 +706,8 @@ class ModelWrapper(torch.nn.Module):
         layers.append(Linear(sizes[-2], sizes[-1], **init))
         self.map_fn = torch.nn.Sequential(*layers)
 
+        print(self.map_fn)
+
     def score_mean_est(self, sigma):
         # Mapping.
         sigma = sigma.to(torch.float32).reshape(-1, 1, 1, 1)
