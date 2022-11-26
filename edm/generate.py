@@ -158,8 +158,13 @@ def edm_sampler(
     S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, **kwargs,
 ):
     # Adjust noise levels based on what's supported by the network.
-    sigma_min = max(sigma_min, net.sigma_min)
-    sigma_max = min(sigma_max, net.sigma_max)
+    if hasattr(net, 'sigma_min'):
+        sigma_min = max(sigma_min, net.sigma_min)
+        sigma_max = min(sigma_max, net.sigma_max)
+    else:
+        sigma_min = max(sigma_min, net.model.sigma_min)
+        sigma_max = min(sigma_max, net.model.sigma_max)
+    
 
     # Time step discretization.
     step_indices = torch.arange(num_steps, dtype=torch.float64, device=latents.device)
@@ -402,7 +407,8 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         net = pickle.load(f)['ema'].to(device)
     
     dset = network_pkl.split("/")[-1].split('-')[1]
-    net = OurModelWrapper(dset, net, sampler_kwargs['method'], not 'uncond' in network_pkl, sampler_kwargs['which_for_score_mean'], sampler_kwargs['n_estimates'], sampler_kwargs['subsample'])
+    if sampler_kwargs['method'] != 'baseline':
+        net = OurModelWrapper(dset, net, sampler_kwargs['method'], not 'uncond' in network_pkl, sampler_kwargs['which_for_score_mean'], sampler_kwargs['n_estimates'], sampler_kwargs['subsample'])
 
     # Other ranks follow.
     if dist.get_rank() == 0:

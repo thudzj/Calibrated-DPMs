@@ -78,7 +78,7 @@ class EDMLoss:
         y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(y) * sigma
         if self.reg_on_mean:
-            D_yn, score_means = net(y + n, sigma, labels, augment_labels=augment_labels)
+            D_yn, score_means = net(y + n, sigma, labels, augment_labels=augment_labels, return_all=True)
             loss = weight * ((D_yn - y) ** 2)
             
             # to make the score net calibrated (weighted by an extra coefficient cal_weight)

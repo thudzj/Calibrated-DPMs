@@ -80,9 +80,18 @@ python -m torch.distributed.run --nproc_per_node=4 generate.py --outdir=generati
 
 ---------------------------fine tune----------------------------
 
+### fine-tune
 ```
 torchrun --standalone --nproc_per_node=4 train.py --outdir=training-runs \
     --data=datasets/cifar10-32x32.zip --cond=0 --arch=ddpmpp --batch-gpu=128 \
-    --duration=10 --lr 1e-4 --reg_on_mean 1 --cal_weight 0.01 \
+    --duration=10 --lr 1e-4 --reg_on_mean 1 --cal_weight 0.02 \
     --transfer=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
+```
+
+### test
+```
+torchrun --standalone --nproc_per_node=4 generate.py --outdir=generations/cifar10/ft-cifar-vp-uncond --seeds=0-49999 --subdirs \
+    --network=training-runs/00020-cifar10-32x32-uncond-ddpmpp-edm-gpus4-batch512-fp32/network-snapshot-000000.pkl; \
+torchrun --standalone --nproc_per_node=4 fid.py calc --images=generations/cifar10/ft-cifar-vp-uncond \
+    --ref=https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz
 ```

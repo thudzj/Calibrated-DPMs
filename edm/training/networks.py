@@ -716,10 +716,15 @@ class ModelWrapper(torch.nn.Module):
         emb = emb.reshape(emb.shape[0], 2, -1).flip(1).reshape(*emb.shape) # swap sin/cos
         return self.map_fn(emb)
 
-    def forward(self, x, sigma, class_labels=None, force_fp32=False, **model_kwargs):
+    def forward(self, x, sigma, class_labels=None, force_fp32=False, return_all=False, **model_kwargs):
         D_x = self.model(x, sigma, class_labels=class_labels, force_fp32=force_fp32, **model_kwargs)
+        if sigma.numel() == 1:
+            sigma = torch.ones(x.shape[0]).to(x.device) * sigma
         score_means = self.score_mean_est(sigma)
-        return D_x, score_means.view_as(x)
+        if return_all:
+            return D_x, score_means.view_as(x)
+        else:
+            return D_x
 
     def round_sigma(self, sigma):
         return self.model.round_sigma(sigma)
