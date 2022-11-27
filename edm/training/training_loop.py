@@ -134,11 +134,11 @@ def training_loop(
                 labels = labels.to(device)
                 loss = loss_fn(net=ddp, images=images, labels=labels, augment_pipe=augment_pipe)
                 if reg_on_mean:
-                    loss, loss2, loss3 = loss
+                    loss, loss3 = loss #, loss2
                     training_stats.report('Loss/loss', loss)
-                    training_stats.report('Loss/loss2', loss2)
+                    # training_stats.report('Loss/loss2', loss2)
                     training_stats.report('Loss/loss3', loss3)
-                    (loss + loss2 + loss3).sum().mul(loss_scaling / batch_gpu_total).backward()
+                    (loss + loss3).sum().mul(loss_scaling / batch_gpu_total).backward() # + loss2
                 else:
                     training_stats.report('Loss/loss', loss)
                     loss.sum().mul(loss_scaling / batch_gpu_total).backward()

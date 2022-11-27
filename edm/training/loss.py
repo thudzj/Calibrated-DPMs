@@ -79,16 +79,16 @@ class EDMLoss:
         n = torch.randn_like(y) * sigma
         if self.reg_on_mean:
             D_yn, score_means = net(y + n, sigma, labels, augment_labels=augment_labels, return_all=True)
-            loss = weight * ((D_yn - y) ** 2)
+            loss = weight * ((y - D_yn - score_means.detach()) ** 2)
             
             # to make the score net calibrated (weighted by an extra coefficient cal_weight)
             score = (y + n - D_yn)
-            loss2 = (score_means.detach() + score)**2 * self.cal_weight * weight
+            # loss2 = (score_means.detach() + score)**2 * self.cal_weight * weight
 
             # to make the small net approximate score mean
-            loss3 = (score_means - score.detach())**2
+            loss3 = (score_means - score.mean(0).detach())**2
 
-            return loss, loss2, loss3
+            return loss, loss3 #, loss2
         else:
             D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
             loss = weight * ((D_yn - y) ** 2)

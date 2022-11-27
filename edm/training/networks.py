@@ -720,11 +720,11 @@ class ModelWrapper(torch.nn.Module):
         D_x = self.model(x, sigma, class_labels=class_labels, force_fp32=force_fp32, **model_kwargs)
         if sigma.numel() == 1:
             sigma = torch.ones(x.shape[0]).to(x.device) * sigma
-        score_means = self.score_mean_est(sigma)
+        score_means = self.score_mean_est(sigma).view_as(x)
         if return_all:
-            return D_x, score_means.view_as(x)
+            return D_x, score_means
         else:
-            return D_x
+            return D_x + score_means.detach()
 
     def round_sigma(self, sigma):
         return self.model.round_sigma(sigma)
