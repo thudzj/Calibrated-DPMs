@@ -362,12 +362,110 @@ class Diffusion(object):
                 fid = calculate_fid_given_paths((self.config.sampling.fid_stats_dir, self.args.image_folder), batch_size=self.config.sampling.fid_batch_size, device='cuda:0', dims=2048, num_workers=8)
                 logging.info("FID: {}".format(fid))
                 np.save(os.path.join(self.args.exp, "fid"), fid)
+        elif self.args.likelihood:
+            self.cal_likelihood(model)
         # elif self.args.interpolation:
         #     self.sample_interpolation(model)
         # elif self.args.sequence:
         #     self.sample_sequence(model)
         else:
             raise NotImplementedError("Sample procedeure not defined")
+
+    @torch.no_grad()
+    def cal_likelihood(self, model, n_estimates=1):
+
+        args, config = self.args, self.config
+        dataset, test_dataset = get_dataset(args, config)
+
+        if args.subsample is None:
+            subsample = len(dataset)
+        else:
+            subsample = args.subsample
+        idx = torch.randperm(len(dataset))[:subsample]
+        train_loader = data.DataLoader(
+            torch.utils.data.Subset(dataset, idx),
+            batch_size=self.config.training.batch_size,
+            shuffle=True,
+            num_workers=self.config.data.num_workers,
+        )
+
+        if args.score_mean:
+            score_mean_dict = {}
+            # for (x, _) in tqdm.tqdm(
+            #         train_loader, desc="Computing score mean for time {}".format(t.item())):
+            for t in range(0, self.num_timesteps):
+                score_sum = None
+                score_norm_sum = 0
+                n_data = 0
+
+                for (x, _) in train_loader:
+                    x = x.to(self.device)
+                    x = data_transform(self.config, x)
+
+                    vec_t = (torch.ones(x.shape[0], device=x.device) * t).long()
+                    a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
+        
+                    for _ in range(n_estimates):
+                        z = x * a.sqrt() + torch.randn_like(x) * (1.0 - a).sqrt()
+                        score = model(z, vec_t)
+                        if score_sum is None:
+                            score_sum = score.sum(0)
+                        else:
+                            score_sum += score.sum(0)
+                        score_norm_sum += score.flatten(1).norm(dim=1).sum()
+                    
+                    n_data += n_estimates * x.shape[0]
+                score_mean = score_sum / n_data
+                score_norm_mean = score_norm_sum / n_data
+                score_mean_norm = score_mean.view(-1).norm()
+                print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
+                score_mean_dict[str("{:.9f}".format(t))] = score_mean
+
+        test_loader = data.DataLoader(
+            test_dataset,
+            batch_size=config.sampling.likelihood_batch_size,
+            shuffle=False,
+            num_workers=config.data.num_workers,
+        )
+
+        if args.likelihood == 'sde':
+       
+            losses = []
+            for i, (x, y) in tqdm.tqdm(
+                enumerate(test_loader), desc="Computing likelihood on test data."
+            ):
+                n = x.size(0)
+                x = x.to(self.device)
+                x = data_transform(self.config, x)
+                e = torch.randn_like(x)
+                b = self.betas
+
+                loss = 0
+                for t in range(1, self.num_timesteps):
+
+                    vec_t = (torch.ones(n, device=self.device) * t).long()
+                    vec_s = (torch.ones(n, device=self.device) * (t - 1)).long()
+                    
+                    a = (1-b).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
+                    a_s = (1-b).cumprod(dim=0).index_select(0, vec_s).view(-1, 1, 1, 1)
+                    
+                    z = x * a.sqrt() + e * (1.0 - a).sqrt()
+                    output = model(z, vec_t.float())
+                    if args.score_mean:
+                        output -= score_mean_dict[str("{:.9f}".format(t))]
+                    x_hat = (z - (1.0 - a).sqrt() * output) / a.sqrt()
+                    
+                    # follow eq 13 of vdm paper
+                    loss_ = (x_hat - x).square().sum(dim=(1, 2, 3))
+                    weight = (a_s / (1 - a_s) - a / (1 - a)).view(-1)
+                    if i == 0:
+                        print(t, weight[0], loss_.mean())
+                    loss += weight * loss_
+                losses.append(loss)
+            losses = torch.cat(losses)
+            print("The sde likelihood ", losses.mean())
+        else:
+            raise NotImplementedError
 
     def sample_fid(self, model, classifier=None):
         config = self.config

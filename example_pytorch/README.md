@@ -34,6 +34,12 @@ CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cif
 CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i both --tradeoff 0.5 --score_mean
 ```
 
+### estimate sde likelihood
+```
+CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i temp --likelihood sde
+
+CUDA_VISIBLE_DEVICES=1 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i temp --score_mean --likelihood sde
+```
 
 
 ## celba

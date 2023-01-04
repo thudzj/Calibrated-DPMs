@@ -120,6 +120,9 @@ def parse_args_and_config():
     parser.add_argument(
         "--subsample", type=int, default=None
     )
+    parser.add_argument(
+        "--likelihood", type=str, default=None
+    )
 
     args = parser.parse_args()
     args.log_path = os.path.join(args.exp, "logs", args.doc)
