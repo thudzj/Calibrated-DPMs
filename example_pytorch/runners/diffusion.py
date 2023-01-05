@@ -393,7 +393,9 @@ class Diffusion(object):
             score_mean_dict = {}
             # for (x, _) in tqdm.tqdm(
             #         train_loader, desc="Computing score mean for time {}".format(t.item())):
-            for t in range(0, self.num_timesteps):
+            stepsize = self.num_timesteps // args.timesteps
+            for s in range(0, self.num_timesteps, stepsize):
+                t = min(s + stepsize, self.num_timesteps - 1)
                 score_sum = None
                 score_norm_sum = 0
                 n_data = 0
@@ -437,18 +439,19 @@ class Diffusion(object):
                 n = x.size(0)
                 x = x.to(self.device)
                 x = data_transform(self.config, x)
-                e = torch.randn_like(x)
                 b = self.betas
 
                 loss = 0
-                for t in range(1, self.num_timesteps):
-
+                stepsize = self.num_timesteps // args.timesteps
+                for s in range(0, self.num_timesteps, stepsize):
+                    t = min(s + stepsize, self.num_timesteps - 1)
                     vec_t = (torch.ones(n, device=self.device) * t).long()
-                    vec_s = (torch.ones(n, device=self.device) * (t - 1)).long()
+                    vec_s = (torch.ones(n, device=self.device) * s).long()
                     
                     a = (1-b).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
                     a_s = (1-b).cumprod(dim=0).index_select(0, vec_s).view(-1, 1, 1, 1)
                     
+                    e = torch.randn_like(x)
                     z = x * a.sqrt() + e * (1.0 - a).sqrt()
                     output = model(z, vec_t.float())
                     if args.score_mean:
@@ -456,14 +459,14 @@ class Diffusion(object):
                     x_hat = (z - (1.0 - a).sqrt() * output) / a.sqrt()
                     
                     # follow eq 13 of vdm paper
-                    loss_ = (x_hat - x).square().sum(dim=(1, 2, 3))
+                    loss_ = (x_hat - x).square().mean(dim=(1, 2, 3))
                     weight = (a_s / (1 - a_s) - a / (1 - a)).view(-1)
                     if i == 0:
-                        print(t, weight[0], loss_.mean())
+                        print(s, t, weight[0], loss_.mean())
                     loss += weight * loss_
                 losses.append(loss)
             losses = torch.cat(losses)
-            print("The sde likelihood ", losses.mean())
+            print("The sde likelihood ", losses.mean() * 0.5)
         else:
             raise NotImplementedError
 
