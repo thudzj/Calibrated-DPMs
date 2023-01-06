@@ -26,6 +26,9 @@ from evaluate.fid_score import calculate_fid_given_paths
 
 import torchvision.utils as tvu
 
+import jax
+from jax import numpy as jnp
+
 
 def load_data_for_worker(base_samples, batch_size, cond_class):
     with bf.BlobFile(base_samples, "rb") as f:
@@ -389,6 +392,9 @@ class Diffusion(object):
             num_workers=self.config.data.num_workers,
         )
 
+        encdec = EncDec(255)
+        
+        # estimate score mean
         if args.score_mean:
             score_mean_dict = {}
             # for (x, _) in tqdm.tqdm(
@@ -400,16 +406,21 @@ class Diffusion(object):
                 score_norm_sum = 0
                 n_data = 0
 
-                for (x, _) in train_loader:
-                    x = x.to(self.device)
-                    x = data_transform(self.config, x)
+                # score_mean_dict[str("{:.9f}".format(t))] = 0
+                # continue
 
-                    vec_t = (torch.ones(x.shape[0], device=x.device) * t).long()
+                for (x, _) in train_loader:
+                    # x = x.to(self.device)
+                    # x = data_transform(self.config, x)
+                    x = (x.to(self.device) * 255).int()
+                    f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
+
+                    vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
                     a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
         
                     for _ in range(n_estimates):
-                        z = x * a.sqrt() + torch.randn_like(x) * (1.0 - a).sqrt()
-                        score = model(z, vec_t)
+                        z = f * a.sqrt() + torch.randn_like(f) * (1.0 - a).sqrt()
+                        score = model(z.float(), vec_t)
                         if score_sum is None:
                             score_sum = score.sum(0)
                         else:
@@ -430,43 +441,78 @@ class Diffusion(object):
             num_workers=config.data.num_workers,
         )
 
+        # prepare for likelihood cal
+        a_0 = (1-self.betas).cumprod(dim=0)[0]
+        a_1 = (1-self.betas).cumprod(dim=0)[-1]
+        SNR_0 = a_0 / (1 - a_0)
+        SNR_1 = a_1 / (1 - a_1)
+        g_0 = - SNR_0.clamp(min=1e-12).log()
+        g_1 = - SNR_1.clamp(min=1e-12).log()
+        var_0, var_1 = 1 - a_0, 1 - a_1
+        print(SNR_0, SNR_1, g_0, g_1, var_0, var_1)
+        
         if args.likelihood == 'sde':
        
-            losses = []
-            for i, (x, y) in tqdm.tqdm(
-                enumerate(test_loader), desc="Computing likelihood on test data."
-            ):
-                n = x.size(0)
-                x = x.to(self.device)
-                x = data_transform(self.config, x)
-                b = self.betas
+            losses1, losses2, losses3 = [], [], []
+            for _ in range(100):
+                for i, (x, y) in tqdm.tqdm(
+                    enumerate(test_loader), desc="Computing likelihood on test data."
+                ):
+                    n = x.size(0)
+                    x = (x.to(self.device) * 255).int()
+                    # x = data_transform(self.config, x)
+                    f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
 
-                loss = 0
-                stepsize = self.num_timesteps // args.timesteps
-                for s in range(0, self.num_timesteps, stepsize):
-                    t = min(s + stepsize, self.num_timesteps - 1)
-                    vec_t = (torch.ones(n, device=self.device) * t).long()
-                    vec_s = (torch.ones(n, device=self.device) * s).long()
+                    # 1. RECONSTRUCTION LOSS
+                    # add noise and reconstruct
+                    eps_0 = torch.randn_like(f)
+                    # z_0 = (1. - var_0).sqrt() * f + var_0.sqrt() * eps_0
+                    z_0_rescaled = f + (0.5 * g_0).exp() * eps_0  # = z_0/sqrt(1-var)
+                    loss_recon = - encdec.logprob(x.permute(0, 2, 3, 1).cpu().numpy(), z_0_rescaled.permute(0, 2, 3, 1).cpu().numpy(), g_0.cpu().numpy())
+
+                    # 2. LATENT LOSS
+                    # KL z1 with N(0,1) prior
+                    mean1_sqr = (1. - var_1) * torch.square(f)
+                    loss_klz = 0.5 * (mean1_sqr + var_1 - var_1.log() - 1.).sum(dim=(1, 2, 3))
                     
-                    a = (1-b).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
-                    a_s = (1-b).cumprod(dim=0).index_select(0, vec_s).view(-1, 1, 1, 1)
-                    
-                    e = torch.randn_like(x)
-                    z = x * a.sqrt() + e * (1.0 - a).sqrt()
-                    output = model(z, vec_t.float())
+                    # 3.
+                    t = torch.rand(n).to(self.device)
+                    t = torch.ceil(t * (self.num_timesteps - 1))
+                    # sample z_t
+                    a_t = (1-self.betas).cumprod(dim=0).index_select(0, t.long())
+                    SNR_t = a_t / (1 - a_t)
+                    # g_t = - SNR_t.clamp(min=1e-8).log()
+                    var_t = (1 - a_t).view(-1, 1, 1, 1)
+                    eps = torch.randn_like(f)
+                    z_t = (1. - var_t).sqrt() * f + var_t.sqrt() * eps
+                    # compute predicted noise
+                    eps_hat = model(z_t.float(), t.float())
                     if args.score_mean:
-                        output -= score_mean_dict[str("{:.9f}".format(t))]
-                    x_hat = (z - (1.0 - a).sqrt() * output) / a.sqrt()
-                    
-                    # follow eq 13 of vdm paper
-                    loss_ = (x_hat - x).square().mean(dim=(1, 2, 3))
-                    weight = (a_s / (1 - a_s) - a / (1 - a)).view(-1)
-                    if i == 0:
-                        print(s, t, weight[0], loss_.mean())
-                    loss += weight * loss_
-                losses.append(loss)
-            losses = torch.cat(losses)
-            print("The sde likelihood ", losses.mean() * 0.5)
+                        for i, t_ in enumerate(t.view(-1)):
+                            eps_hat[i] -= score_mean_dict[str("{:.9f}".format(t_.item()))]
+                    f_hat = (z_t - var_t.sqrt() * eps_hat) / (1. - var_t).sqrt()
+                    # compute MSE of predicted noise
+                    loss_diff_mse = torch.square(f - f_hat).sum(dim=(1, 2, 3))
+
+                    # loss for finite depth T, i.e. discrete time
+                    s = t - 1
+                    a_s = (1-self.betas).cumprod(dim=0).index_select(0, s.long())
+                    SNR_s = a_s / (1 - a_s)
+                    # g_s = - SNR_s.clamp(min=1e-8).log()
+                    loss_diff = .5 * self.num_timesteps * (SNR_s - SNR_t) * loss_diff_mse
+                    # print(g_t[0], g_s[0], torch.expm1(g_t[0] - g_s[0]), loss_diff_mse.mean())
+                    # print(torch.expm1(g_t - g_s))
+
+                    losses1.append(torch.from_numpy(np.array(loss_recon)))
+                    losses2.append(loss_klz)
+                    losses3.append(loss_diff)
+            losses1 = torch.cat(losses1) * 1. / (np.prod(x.shape[1:]) * np.log(2.))
+            losses2 = torch.cat(losses2) * 1. / (np.prod(x.shape[1:]) * np.log(2.))
+            losses3 = torch.cat(losses3) * 1. / (np.prod(x.shape[1:]) * np.log(2.))
+            print("loss_recon", losses1.mean())
+            print("loss_klz", losses2.mean())
+            print("loss_diff", losses3.mean())
+            print("The likelihood", losses1.mean() + losses2.mean() + losses3.mean())
         else:
             raise NotImplementedError
 
@@ -705,3 +751,42 @@ class Diffusion(object):
 
     def test(self):
         pass
+
+
+
+class EncDec:
+  """Encoder and decoder. """
+  def __init__(self, vocab_size):
+    self.vocab_size = vocab_size
+
+  def __call__(self, x, g_0):
+    # For initialization purposes
+    h = self.encode(x)
+    return self.decode(h, g_0)
+
+  def encode(self, x):
+    # This transforms x from discrete values (0, 1, ...)
+    # to the domain (-1,1).
+    # Rounding here just a safeguard to ensure the input is discrete
+    # (although typically, x is a discrete variable such as uint8)
+    x = x.round()
+    return 2 * ((x+.5) / self.vocab_size) - 1
+
+  def decode(self, z, g_0):
+
+    # Logits are exact if there are no dependencies between dimensions of x
+    x_vals = jnp.arange(0, self.vocab_size)[:, None]
+    x_vals = jnp.repeat(x_vals, 3, 1)
+    x_vals = self.encode(x_vals).transpose([1, 0])[None, None, None, :, :]
+    inv_stdev = jnp.exp(-0.5 * g_0[..., None])
+    logits = -0.5 * jnp.square((z[..., None] - x_vals) * inv_stdev)
+
+    logprobs = jax.nn.log_softmax(logits)
+    return logprobs
+
+  def logprob(self, x, z, g_0):
+    x = x.round().astype('int32')
+    x_onehot = jax.nn.one_hot(x, self.vocab_size)
+    logprobs = self.decode(z, g_0)
+    logprob = jnp.sum(x_onehot * logprobs, axis=(1, 2, 3, 4))
+    return logprob
