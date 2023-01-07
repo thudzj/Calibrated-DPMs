@@ -392,47 +392,51 @@ class Diffusion(object):
             num_workers=self.config.data.num_workers,
         )
 
-        encdec = EncDec(255)
+        encdec = EncDec(256)
         
         # estimate score mean
         if args.score_mean:
-            score_mean_dict = {}
-            # for (x, _) in tqdm.tqdm(
-            #         train_loader, desc="Computing score mean for time {}".format(t.item())):
-            stepsize = self.num_timesteps // args.timesteps
-            for s in range(0, self.num_timesteps, stepsize):
-                t = min(s + stepsize, self.num_timesteps - 1)
-                score_sum = None
-                score_norm_sum = 0
-                n_data = 0
+            if os.path.exists("score_means.pt"):
+                score_mean_dict = torch.load("score_means.pt", map_location=self.device)
+            else:
+                score_mean_dict = {}
+                # for (x, _) in tqdm.tqdm(
+                #         train_loader, desc="Computing score mean for time {}".format(t.item())):
+                stepsize = self.num_timesteps // args.timesteps
+                for s in range(0, self.num_timesteps, stepsize):
+                    t = min(s + stepsize, self.num_timesteps - 1)
+                    score_sum = None
+                    score_norm_sum = 0
+                    n_data = 0
 
-                # score_mean_dict[str("{:.9f}".format(t))] = 0
-                # continue
+                    # score_mean_dict[str("{:.9f}".format(t))] = torch.zeros(3, 32, 32).to(self.device)
+                    # continue
 
-                for (x, _) in train_loader:
-                    # x = x.to(self.device)
-                    # x = data_transform(self.config, x)
-                    x = (x.to(self.device) * 255).int()
-                    f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
+                    for (x, _) in train_loader:
+                        # x = x.to(self.device)
+                        # x = data_transform(self.config, x)
+                        x = (x.to(self.device) * 255).int()
+                        f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
 
-                    vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
-                    a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
-        
-                    for _ in range(n_estimates):
-                        z = f * a.sqrt() + torch.randn_like(f) * (1.0 - a).sqrt()
-                        score = model(z.float(), vec_t)
-                        if score_sum is None:
-                            score_sum = score.sum(0)
-                        else:
-                            score_sum += score.sum(0)
-                        score_norm_sum += score.flatten(1).norm(dim=1).sum()
-                    
-                    n_data += n_estimates * x.shape[0]
-                score_mean = score_sum / n_data
-                score_norm_mean = score_norm_sum / n_data
-                score_mean_norm = score_mean.view(-1).norm()
-                print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
-                score_mean_dict[str("{:.9f}".format(t))] = score_mean
+                        vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
+                        a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
+            
+                        for _ in range(n_estimates):
+                            z = f * a.sqrt() + torch.randn_like(f) * (1.0 - a).sqrt()
+                            score = model(z.float(), vec_t)
+                            if score_sum is None:
+                                score_sum = score.sum(0)
+                            else:
+                                score_sum += score.sum(0)
+                            score_norm_sum += score.flatten(1).norm(dim=1).sum()
+                        
+                        n_data += n_estimates * x.shape[0]
+                    score_mean = score_sum / n_data
+                    score_norm_mean = score_norm_sum / n_data
+                    score_mean_norm = score_mean.view(-1).norm()
+                    print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
+                    score_mean_dict[str("{:.9f}".format(t))] = score_mean
+                torch.save(score_mean_dict, "score_means.pt")
 
         test_loader = data.DataLoader(
             test_dataset,
