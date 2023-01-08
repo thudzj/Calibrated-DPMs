@@ -28,6 +28,7 @@ import torchvision.utils as tvu
 
 import jax
 from jax import numpy as jnp
+import matplotlib.pyplot as plt
 
 
 def load_data_for_worker(base_samples, batch_size, cond_class):
@@ -398,8 +399,10 @@ class Diffusion(object):
         if args.score_mean:
             if os.path.exists("score_means.pt"):
                 score_mean_dict = torch.load("score_means.pt", map_location=self.device)
+                stats = score_mean_dict['stats']
             else:
                 score_mean_dict = {}
+                stats = []
                 # for (x, _) in tqdm.tqdm(
                 #         train_loader, desc="Computing score mean for time {}".format(t.item())):
                 stepsize = self.num_timesteps // args.timesteps
@@ -434,9 +437,14 @@ class Diffusion(object):
                     score_mean = score_sum / n_data
                     score_norm_mean = score_norm_sum / n_data
                     score_mean_norm = score_mean.view(-1).norm()
+                    stats.append(torch.tensor([t, score_norm_mean.item(), score_mean_norm.item()]).to(self.device))
                     print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
                     score_mean_dict[str("{:.9f}".format(t))] = score_mean
+                stats = torch.stack(stats)
+                score_mean_dict['stats'] = stats
                 torch.save(score_mean_dict, "score_means.pt")
+            
+            plot_score_mean_stats(stats)
 
         test_loader = data.DataLoader(
             test_dataset,
@@ -774,7 +782,7 @@ class EncDec:
     # Rounding here just a safeguard to ensure the input is discrete
     # (although typically, x is a discrete variable such as uint8)
     x = x.round()
-    return 2 * ((x+.5) / self.vocab_size) - 1
+    return (x / 255.) * 2 - 1 #2 * ((x+.5) / self.vocab_size) - 1
 
   def decode(self, z, g_0):
 
@@ -794,3 +802,24 @@ class EncDec:
     logprobs = self.decode(z, g_0)
     logprob = jnp.sum(x_onehot * logprobs, axis=(1, 2, 3, 4))
     return logprob
+
+def plot_score_mean_stats(stats):
+    plt.figure(dpi=100,figsize=(5.5, 5))
+    # plt.grid(linestyle = "--")
+    plt.plot(stats[:, 0].data.cpu().numpy(), stats[:, 1].data.cpu().numpy(), ms = 5, lw=2, color='Blue')
+    x_index=['4','8','16','32','64'] #,'128','256'
+    _ = plt.xticks([0, 200, 400, 600, 800, 999], ['0', '200', '400', '600', '800', '1000'])
+    # plt.legend(loc='best',prop = {'size':14},framealpha=0.3)
+    plt.xlabel("T",fontsize=16)
+    plt.ylabel("Average norm of the predicted noise",fontsize=16)
+    plt.savefig('score_norm_mean.pdf')
+
+    plt.figure(dpi=100,figsize=(5.5, 5))
+    # plt.grid(linestyle = "--")
+    plt.plot(stats[:, 0].data.cpu().numpy(), stats[:, 2].data.cpu().numpy(), ms = 5, lw=2, color='Blue')
+    x_index=['4','8','16','32','64'] #,'128','256'
+    _ = plt.xticks([0, 200, 400, 600, 800, 999], ['0', '200', '400', '600', '800', '1000'])
+    # plt.legend(loc='best',prop = {'size':14},framealpha=0.3)
+    plt.xlabel("T",fontsize=16)
+    plt.ylabel("Norm of the average predicted noise",fontsize=16)
+    plt.savefig('score_mean_norm.pdf')
