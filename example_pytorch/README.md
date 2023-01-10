@@ -36,9 +36,13 @@ CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cif
 
 ### estimate sde likelihood
 ```
-XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda CUDA_VISIBLE_DEVICES=2 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --timesteps=1000 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i temp --likelihood sde
+CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
 
-XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda CUDA_VISIBLE_DEVICES=1 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --timesteps=1000 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i temp --likelihood sde --score_mean
+CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
+
+CUDA_VISIBLE_DEVICES=2 python main.py --config imagenet64.yml --exp=experiments/imagenet64 --sample --eta 0 --ni --start_time=1e-3 -i temp --likelihood sde
+
+CUDA_VISIBLE_DEVICES=3 python main.py --config bedroom_guided.yml --exp=experiments/lsun_bedroom --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
 
 ```
 

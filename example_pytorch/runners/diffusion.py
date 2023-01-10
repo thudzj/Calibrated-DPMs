@@ -26,8 +26,8 @@ from evaluate.fid_score import calculate_fid_given_paths
 
 import torchvision.utils as tvu
 
-import jax
-from jax import numpy as jnp
+# import jax
+# from jax import numpy as jnp
 import matplotlib.pyplot as plt
 
 
@@ -423,15 +423,15 @@ class Diffusion(object):
                         z = x * a.sqrt() + eps * (1.0 - a).sqrt()
                         score = model(z.float(), vec_t)
                         score_sum += score.sum(0)
-                        score_norm_sum += score.flatten(1).norm(dim=1).sum()
+                        score_norm_sum += (score.flatten(1).norm(dim=1) ** 2).sum()
                     
                     n_data += n_estimates * x.shape[0]
                 score_mean = score_sum / n_data
                 score_norm_mean = score_norm_sum / n_data
-                score_mean_norm = score_mean.view(-1).norm()
+                score_mean_norm = score_mean.view(-1).norm() ** 2
                 
-                stats.append(np.array([t, score_mean_norm.item() ** 2]))
-                summation += score_mean_norm.item() ** 2 * (SNR_s / SNR_t - 1)
+                stats.append(np.array([t, score_mean_norm.item(), score_mean_norm.item() * (SNR_s / SNR_t - 1).item(), score_norm_mean.item()]))
+                summation += score_mean_norm.item() * (SNR_s / SNR_t - 1)
                 print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
             stats = np.stack(stats)
             np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
@@ -818,42 +818,42 @@ class Diffusion(object):
 
 
 
-class EncDec:
-  """Encoder and decoder. """
-  def __init__(self, vocab_size):
-    self.vocab_size = vocab_size
+# class EncDec:
+#   """Encoder and decoder. """
+#   def __init__(self, vocab_size):
+#     self.vocab_size = vocab_size
 
-  def __call__(self, x, g_0):
-    # For initialization purposes
-    h = self.encode(x)
-    return self.decode(h, g_0)
+#   def __call__(self, x, g_0):
+#     # For initialization purposes
+#     h = self.encode(x)
+#     return self.decode(h, g_0)
 
-  def encode(self, x):
-    # This transforms x from discrete values (0, 1, ...)
-    # to the domain (-1,1).
-    # Rounding here just a safeguard to ensure the input is discrete
-    # (although typically, x is a discrete variable such as uint8)
-    x = x.round()
-    return (x / 255.) * 2 - 1 #2 * ((x+.5) / self.vocab_size) - 1
+#   def encode(self, x):
+#     # This transforms x from discrete values (0, 1, ...)
+#     # to the domain (-1,1).
+#     # Rounding here just a safeguard to ensure the input is discrete
+#     # (although typically, x is a discrete variable such as uint8)
+#     x = x.round()
+#     return (x / 255.) * 2 - 1 #2 * ((x+.5) / self.vocab_size) - 1
 
-  def decode(self, z, g_0):
+#   def decode(self, z, g_0):
 
-    # Logits are exact if there are no dependencies between dimensions of x
-    x_vals = jnp.arange(0, self.vocab_size)[:, None]
-    x_vals = jnp.repeat(x_vals, 3, 1)
-    x_vals = self.encode(x_vals).transpose([1, 0])[None, None, None, :, :]
-    inv_stdev = jnp.exp(-0.5 * g_0[..., None])
-    logits = -0.5 * jnp.square((z[..., None] - x_vals) * inv_stdev)
+#     # Logits are exact if there are no dependencies between dimensions of x
+#     x_vals = jnp.arange(0, self.vocab_size)[:, None]
+#     x_vals = jnp.repeat(x_vals, 3, 1)
+#     x_vals = self.encode(x_vals).transpose([1, 0])[None, None, None, :, :]
+#     inv_stdev = jnp.exp(-0.5 * g_0[..., None])
+#     logits = -0.5 * jnp.square((z[..., None] - x_vals) * inv_stdev)
 
-    logprobs = jax.nn.log_softmax(logits)
-    return logprobs
+#     logprobs = jax.nn.log_softmax(logits)
+#     return logprobs
 
-  def logprob(self, x, z, g_0):
-    x = x.round().astype('int32')
-    x_onehot = jax.nn.one_hot(x, self.vocab_size)
-    logprobs = self.decode(z, g_0)
-    logprob = jnp.sum(x_onehot * logprobs, axis=(1, 2, 3, 4))
-    return logprob
+#   def logprob(self, x, z, g_0):
+#     x = x.round().astype('int32')
+#     x_onehot = jax.nn.one_hot(x, self.vocab_size)
+#     logprobs = self.decode(z, g_0)
+#     logprob = jnp.sum(x_onehot * logprobs, axis=(1, 2, 3, 4))
+#     return logprob
 
 def plot_score_mean_stats(stats):
     # plt.figure(dpi=100,figsize=(5.5, 5))
