@@ -397,8 +397,8 @@ class Diffusion(object):
         
         # estimate score mean
         if args.score_mean:
-            if os.path.exists("score_means_new.pt"):
-                score_mean_dict = torch.load("score_means_new.pt", map_location=self.device)
+            if os.path.exists("score_means_new2.pt"):
+                score_mean_dict = torch.load("score_means_new2.pt", map_location=self.device)
                 stats = score_mean_dict['stats']
             else:
                 score_mean_dict = {}
@@ -425,12 +425,13 @@ class Diffusion(object):
                         a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
             
                         for _ in range(n_estimates):
-                            z = x * a.sqrt() + torch.randn_like(x) * (1.0 - a).sqrt()
+                            eps = torch.randn_like(x)
+                            z = x * a.sqrt() + eps * (1.0 - a).sqrt()
                             score = model(z.float(), vec_t)
                             if score_sum is None:
-                                score_sum = score.sum(0)
+                                score_sum = score.sum(0) - eps.sum(0)
                             else:
-                                score_sum += score.sum(0)
+                                score_sum += score.sum(0) - eps.sum(0)
                             score_norm_sum += score.flatten(1).norm(dim=1).sum()
                         
                         n_data += n_estimates * x.shape[0]
