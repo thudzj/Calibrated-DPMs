@@ -397,8 +397,8 @@ class Diffusion(object):
         
         # estimate score mean
         if args.score_mean:
-            if os.path.exists("score_means.pt"):
-                score_mean_dict = torch.load("score_means.pt", map_location=self.device)
+            if os.path.exists("score_means_new.pt"):
+                score_mean_dict = torch.load("score_means_new.pt", map_location=self.device)
                 stats = score_mean_dict['stats']
             else:
                 score_mean_dict = {}
@@ -416,16 +416,16 @@ class Diffusion(object):
                     # continue
 
                     for (x, _) in train_loader:
-                        # x = x.to(self.device)
-                        # x = data_transform(self.config, x)
-                        x = (x.to(self.device) * 255).int()
-                        f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
+                        x = x.to(self.device)
+                        x = data_transform(self.config, x)
+                        # x = (x.to(self.device) * 255).int()
+                        # f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
 
                         vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
                         a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
             
                         for _ in range(n_estimates):
-                            z = f * a.sqrt() + torch.randn_like(f) * (1.0 - a).sqrt()
+                            z = x * a.sqrt() + torch.randn_like(x) * (1.0 - a).sqrt()
                             score = model(z.float(), vec_t)
                             if score_sum is None:
                                 score_sum = score.sum(0)
@@ -442,12 +442,12 @@ class Diffusion(object):
                     score_mean_dict[str("{:.9f}".format(t))] = score_mean
                 stats = torch.stack(stats)
                 score_mean_dict['stats'] = stats
-                torch.save(score_mean_dict, "score_means.pt")
+                torch.save(score_mean_dict, "score_means_new.pt")
             
             plot_score_mean_stats(stats)
 
         test_loader = data.DataLoader(
-            test_dataset,
+            dataset, #test_dataset,
             batch_size=config.sampling.likelihood_batch_size,
             shuffle=False,
             num_workers=config.data.num_workers,
@@ -471,20 +471,21 @@ class Diffusion(object):
                     enumerate(test_loader), desc="Computing likelihood on test data."
                 ):
                     n = x.size(0)
-                    x = (x.to(self.device) * 255).int()
-                    # x = data_transform(self.config, x)
-                    f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
+                    x = x.to(self.device)
+                    # x = (x.to(self.device) * 255).int()
+                    x = data_transform(self.config, x)
+                    # f = torch.from_numpy(encdec.encode(x.data.cpu().numpy())).to(self.device)
 
                     # 1. RECONSTRUCTION LOSS
                     # add noise and reconstruct
-                    eps_0 = torch.randn_like(f)
+                    eps_0 = torch.randn_like(x)
                     # z_0 = (1. - var_0).sqrt() * f + var_0.sqrt() * eps_0
-                    z_0_rescaled = f + (0.5 * g_0).exp() * eps_0  # = z_0/sqrt(1-var)
-                    loss_recon = - encdec.logprob(x.permute(0, 2, 3, 1).cpu().numpy(), z_0_rescaled.permute(0, 2, 3, 1).cpu().numpy(), g_0.cpu().numpy())
+                    z_0_rescaled = x + (0.5 * g_0).exp() * eps_0  # = z_0/sqrt(1-var)
+                    loss_recon = - encdec.logprob((x+1).mul(255/2.).permute(0, 2, 3, 1).cpu().numpy(), z_0_rescaled.permute(0, 2, 3, 1).cpu().numpy(), g_0.cpu().numpy())
 
                     # 2. LATENT LOSS
                     # KL z1 with N(0,1) prior
-                    mean1_sqr = (1. - var_1) * torch.square(f)
+                    mean1_sqr = (1. - var_1) * torch.square(x)
                     loss_klz = 0.5 * (mean1_sqr + var_1 - var_1.log() - 1.).sum(dim=(1, 2, 3))
                     
                     # 3.
@@ -495,16 +496,20 @@ class Diffusion(object):
                     SNR_t = a_t / (1 - a_t)
                     # g_t = - SNR_t.clamp(min=1e-8).log()
                     var_t = (1 - a_t).view(-1, 1, 1, 1)
-                    eps = torch.randn_like(f)
-                    z_t = (1. - var_t).sqrt() * f + var_t.sqrt() * eps
+                    eps = torch.randn_like(x)
+                    z_t = (1. - var_t).sqrt() * x + var_t.sqrt() * eps
                     # compute predicted noise
                     eps_hat = model(z_t.float(), t.float())
                     if args.score_mean:
-                        for i, t_ in enumerate(t.view(-1)):
-                            eps_hat[i] -= score_mean_dict[str("{:.9f}".format(t_.item()))]
-                    f_hat = (z_t - var_t.sqrt() * eps_hat) / (1. - var_t).sqrt()
+                        tmp = torch.stack([score_mean_dict[str("{:.9f}".format(t_.item()))] for t_ in t.view(-1)])
+                        # print(tmp.view(tmp.shape[0], -1).norm(dim=1).mean())
+                        eps_hat2 = eps_hat - tmp
+                    x_hat = (z_t - var_t.sqrt() * eps_hat) / (1. - var_t).sqrt()
+                    x_hat2 = (z_t - var_t.sqrt() * eps_hat2) / (1. - var_t).sqrt()
                     # compute MSE of predicted noise
-                    loss_diff_mse = torch.square(f - f_hat).sum(dim=(1, 2, 3))
+                    loss_diff_mse = torch.square(x - x_hat).sum(dim=(1, 2, 3))
+                    loss_diff_mse2 = torch.square(x - x_hat2).sum(dim=(1, 2, 3))
+                    print(torch.stack([t, loss_diff_mse, loss_diff_mse2], dim=1).T)
 
                     # loss for finite depth T, i.e. discrete time
                     s = t - 1
