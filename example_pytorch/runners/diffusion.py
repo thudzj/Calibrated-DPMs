@@ -393,6 +393,52 @@ class Diffusion(object):
             num_workers=self.config.data.num_workers,
         )
 
+        if os.path.exists("score_stats_{}.npz".format(self.config.data.dataset)):
+            score_stats = np.load("score_stats_{}.npz".format(self.config.data.dataset))
+            stats = score_stats['stats']
+            summation = score_stats['summation']
+        else:
+            stats = []
+            summation = 0
+            for s in range(0, self.num_timesteps - 1):
+                t = s + 1
+                a_t = (1-self.betas).cumprod(dim=0)[t]
+                a_s = (1-self.betas).cumprod(dim=0)[s]
+                SNR_t = a_t / (1 - a_t)
+                SNR_s = a_s / (1 - a_s)
+
+                score_sum = 0
+                score_norm_sum = 0
+                n_data = 0
+
+                for (x, _) in train_loader:
+                    x = x.to(self.device)
+                    x = data_transform(self.config, x)
+
+                    vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
+                    a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
+        
+                    for _ in range(n_estimates):
+                        eps = torch.randn_like(x)
+                        z = x * a.sqrt() + eps * (1.0 - a).sqrt()
+                        score = model(z.float(), vec_t)
+                        score_sum += score.sum(0)
+                        score_norm_sum += score.flatten(1).norm(dim=1).sum()
+                    
+                    n_data += n_estimates * x.shape[0]
+                score_mean = score_sum / n_data
+                score_norm_mean = score_norm_sum / n_data
+                score_mean_norm = score_mean.view(-1).norm()
+                
+                stats.append(np.array([t, score_mean_norm.item() ** 2]))
+                summation += score_mean_norm.item() ** 2 * (SNR_s / SNR_t - 1)
+                print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
+            stats = np.stack(stats)
+            np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
+        print(summation)
+        plot_score_mean_stats(stats)
+        return
+
         encdec = EncDec(256)
         
         # estimate score mean
@@ -810,19 +856,19 @@ class EncDec:
     return logprob
 
 def plot_score_mean_stats(stats):
-    plt.figure(dpi=100,figsize=(5.5, 5))
-    # plt.grid(linestyle = "--")
-    plt.plot(stats[:, 0].data.cpu().numpy(), stats[:, 1].data.cpu().numpy(), ms = 5, lw=2, color='Blue')
-    x_index=['4','8','16','32','64'] #,'128','256'
-    _ = plt.xticks([0, 200, 400, 600, 800, 999], ['0', '200', '400', '600', '800', '1000'])
-    # plt.legend(loc='best',prop = {'size':14},framealpha=0.3)
-    plt.xlabel("T",fontsize=16)
-    plt.ylabel("Average norm of the predicted noise",fontsize=16)
-    plt.savefig('score_norm_mean.pdf')
+    # plt.figure(dpi=100,figsize=(5.5, 5))
+    # # plt.grid(linestyle = "--")
+    # plt.plot(stats[:, 0].data.cpu().numpy(), stats[:, 1].data.cpu().numpy(), ms = 5, lw=2, color='Blue')
+    # x_index=['4','8','16','32','64'] #,'128','256'
+    # _ = plt.xticks([0, 200, 400, 600, 800, 999], ['0', '200', '400', '600', '800', '1000'])
+    # # plt.legend(loc='best',prop = {'size':14},framealpha=0.3)
+    # plt.xlabel("T",fontsize=16)
+    # plt.ylabel("Average norm of the predicted noise",fontsize=16)
+    # plt.savefig('score_norm_mean.pdf')
 
     plt.figure(dpi=100,figsize=(5.5, 5))
     # plt.grid(linestyle = "--")
-    plt.plot(stats[:, 0].data.cpu().numpy(), stats[:, 2].data.cpu().numpy(), ms = 5, lw=2, color='Blue')
+    plt.plot(stats[:, 0], stats[:, 1], ms = 5, lw=2, color='Blue')
     x_index=['4','8','16','32','64'] #,'128','256'
     _ = plt.xticks([0, 200, 400, 600, 800, 999], ['0', '200', '400', '600', '800', '1000'])
     # plt.legend(loc='best',prop = {'size':14},framealpha=0.3)
