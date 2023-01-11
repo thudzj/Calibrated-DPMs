@@ -107,8 +107,9 @@ class OurModelWrapper:
         score = score_t_one_step
         return score
 
-    def estimate_score_mean(self, sigma, n_estimates=1):
+    def estimate_score_mean(self, sigma, n_estimates=1, s=None, return_all=False):
         score_sum = None
+        score_norm_sum = 0
         n_data = None
         for (x, y) in tqdm.tqdm( #self.data_loader: #
                 self.data_loader, desc="Computing score mean for sigma {}".format(sigma.item())):
@@ -130,6 +131,8 @@ class OurModelWrapper:
                     else:
                         score_sum += score.sum(0)
                 
+                score_norm_sum += (score.view(score.shape[0], -1).norm(dim=1) ** 2).sum()
+                
                 if n_data is None:
                     if self.is_cond:
                         n_data = y.sum(0)
@@ -147,6 +150,15 @@ class OurModelWrapper:
         else:
             assert n_data == self.subsample * n_estimates, (n_data, self.subsample, n_estimates)
             score_mean = score_sum / n_data
+        
+        if return_all:
+            score_norm_mean = score_norm_sum / n_data
+            t = sigma
+            SNR_s = 1 / s**2
+            SNR_t = 1 / t**2
+            score_mean_norm = score_mean.view(-1).norm() ** 2
+            print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
+            return np.array([t.item(), score_mean_norm.item(), (score_mean_norm * (SNR_s / SNR_t - 1)).item(), score_norm_mean.item()])
         return score_mean
 
 #----------------------------------------------------------------------------
@@ -409,6 +421,18 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     dset = network_pkl.split("/")[-1].split('-')[1]
     if sampler_kwargs['method'] != 'baseline':
         net = OurModelWrapper(dset, net, sampler_kwargs['method'], not 'uncond' in network_pkl, sampler_kwargs['which_for_score_mean'], sampler_kwargs['n_estimates'], sampler_kwargs['subsample'])
+        if 1:
+            num_steps = 256
+            stats = []
+            summation = 0
+            for t in range(1, num_steps + 1):
+                t /= float(num_steps)
+                s = t - 1 / float(num_steps)
+                stats.append(net.estimate_score_mean(torch.tensor([t]).to(device), s=torch.tensor([s]).to(device), return_all=True))
+                summation += stats[-1][2]
+            stats = np.stack(stats)
+            np.savez("score_stats_{}.npz".format('imagenet'), stats=stats, summation=summation)
+            exit()
 
     # Other ranks follow.
     if dist.get_rank() == 0:
