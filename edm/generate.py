@@ -426,6 +426,13 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         net = OurModelWrapper(dset, net, sampler_kwargs['method'], not 'uncond' in network_pkl, sampler_kwargs['which_for_score_mean'], sampler_kwargs['n_estimates'], sampler_kwargs['subsample'])
         net.is_cond = False
         if 1:
+            if "cifar10" in network_pkl:
+                dataset = 'cifar10'
+            elif "imagenet" in network_pkl:
+                dataset = 'imagenet'
+            elif 'ffhq' in network_pkl:
+                dataset = 'ffhq'
+
             num_steps = 256
             stats = []
             summation = 0
@@ -436,8 +443,7 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
                 print(t)
                 stats.append(net.estimate_score_mean(torch.tensor([t]).to(device), s=torch.tensor([s]).to(device), return_all=True))
                 summation += stats[-1][2]
-                stats = np.stack(stats)
-                np.savez("score_stats_{}.npz".format('imagenet'), stats=stats, summation=summation)
+                np.savez("score_stats_{}_{}_{}.npz".format(dataset, sampler_kwargs['num_splits'], sampler_kwargs['split_id']), stats=np.stack(stats), summation=summation)
             exit()
 
     # Other ranks follow.
