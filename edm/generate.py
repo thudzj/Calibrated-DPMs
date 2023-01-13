@@ -387,6 +387,9 @@ def parse_int_list(s):
 @click.option('--n_estimates', type=int, default=1)
 @click.option('--subsample', type=int, default=None)
 
+@click.option('--num_splits', type=int, default=1)
+@click.option('--split_id', type=int, default=0)
+
 def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=torch.device('cuda'), **sampler_kwargs):
     """Generate random images using the techniques described in the paper
     "Elucidating the Design Space of Diffusion-Based Generative Models".
@@ -426,13 +429,15 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
             num_steps = 256
             stats = []
             summation = 0
-            for t in range(1, num_steps + 1):
+            for t in range(1 + sampler_kwargs['split_id'] * (num_steps//sampler_kwargs['num_splits']), 
+                           1 + (sampler_kwargs['split_id'] + 1) * (num_steps//sampler_kwargs['num_splits'])):
                 t /= float(num_steps)
                 s = t - 1 / float(num_steps)
+                print(t)
                 stats.append(net.estimate_score_mean(torch.tensor([t]).to(device), s=torch.tensor([s]).to(device), return_all=True))
                 summation += stats[-1][2]
-            stats = np.stack(stats)
-            np.savez("score_stats_{}.npz".format('imagenet'), stats=stats, summation=summation)
+                stats = np.stack(stats)
+                np.savez("score_stats_{}.npz".format('imagenet'), stats=stats, summation=summation)
             exit()
 
     # Other ranks follow.
