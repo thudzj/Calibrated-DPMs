@@ -421,6 +421,7 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     dset = network_pkl.split("/")[-1].split('-')[1]
     if sampler_kwargs['method'] != 'baseline':
         net = OurModelWrapper(dset, net, sampler_kwargs['method'], not 'uncond' in network_pkl, sampler_kwargs['which_for_score_mean'], sampler_kwargs['n_estimates'], sampler_kwargs['subsample'])
+        net.is_cond = False
         if 1:
             num_steps = 256
             stats = []
