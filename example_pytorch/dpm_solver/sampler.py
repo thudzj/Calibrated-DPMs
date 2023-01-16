@@ -254,27 +254,28 @@ class OurModelWrapper:
         # t_T = self.noise_schedule.T if T is None else T
         # self.timesteps = self.get_time_steps(skip_type=skip_type, t_T=t_T, t_0=t_0, N=steps, device=device)
         
-        if hasattr(self.config.data, 'generations_dir') and self.config.data.generations_dir != "":
-            dataset = GenDataset(self.config.data.generations_dir,
-                transform=transforms.Compose(
-                    [
-                        transforms.Resize(config.data.image_size),
-                        transforms.CenterCrop(config.data.image_size),
-                        transforms.RandomHorizontalFlip(p=0.5),
-                        transforms.ToTensor(),
-                    ]
-                ))
-        else:
-            dataset, _ = get_dataset(self.args, self.config)
-        if self.subsample is None:
-            self.subsample = len(dataset)
-        idx = torch.randperm(len(dataset))[:self.subsample]
-        self.data_loader = data.DataLoader(
-            torch.utils.data.Subset(dataset, idx),
-            batch_size=self.config.training.batch_size,
-            shuffle=True,
-            num_workers=self.config.data.num_workers,
-        )
+        if self.score_mean:
+            if hasattr(self.config.data, 'generations_dir') and self.config.data.generations_dir != "":
+                dataset = GenDataset(self.config.data.generations_dir,
+                    transform=transforms.Compose(
+                        [
+                            transforms.Resize(config.data.image_size),
+                            transforms.CenterCrop(config.data.image_size),
+                            transforms.RandomHorizontalFlip(p=0.5),
+                            transforms.ToTensor(),
+                        ]
+                    ))
+            else:
+                dataset, _ = get_dataset(self.args, self.config)
+            if self.subsample is None:
+                self.subsample = len(dataset)
+            idx = torch.randperm(len(dataset))[:self.subsample]
+            self.data_loader = data.DataLoader(
+                torch.utils.data.Subset(dataset, idx),
+                batch_size=self.config.training.batch_size,
+                shuffle=True,
+                num_workers=self.config.data.num_workers,
+            )
 
     # def get_time_steps(self, skip_type, t_T, t_0, N, device):
     #     if skip_type == 'logSNR':
@@ -344,7 +345,7 @@ class OurModelWrapper:
         # else:
         score = score_t_one_step - score_mean_t
 
-        if not "{:.9f}".format(t_) in self.flag:
+        if self.score_mean and not "{:.9f}".format(t_) in self.flag:
             score_norm_mean = score_t_one_step.flatten(1).norm(dim=1).mean()
             score_mean_t_norm = score_mean_t.view(-1).norm()
             print("for genrated data; t", t[0].item(), "score_norm_mean", score_norm_mean.item(), "score_mean_t_norm", score_mean_t_norm.item(), "ratio", (score_norm_mean/score_mean_t_norm).item())
