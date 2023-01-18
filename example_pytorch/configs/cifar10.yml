@@ -9,6 +9,7 @@ data:
     rescaled: true
     num_workers: 4
     num_classes: 10
+    # generations_dir: /home/zhijie/dpm-solver/example_pytorch/experiments/cifar10/image_samples/baseline-o3-50steps-200k
 
 model:
     model_type: "ddpm"

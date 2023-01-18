@@ -29,6 +29,31 @@ CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cif
     INFO - diffusion.py - 2022-10-21 15:32:54,742 - FID: 3.376375179294712
     INFO - diffusion.py - 2022-10-21 20:55:29,118 - FID: 3.376101703370068
 
+subsample 500, 1000, 2000, 5000, 10000, 20000
+    55.37532531211093
+    18.72157931812609
+    8.050717149706486
+    4.306070634365824
+    3.4714798001684812
+    3.250376472957953 
+use generations 2000 5000 10000 20000 50000 100000 200000
+    use baseline-o3-20steps
+        9.472575612759613
+        4.808311376691904
+        4.122684710097019
+        3.4804372221257154
+        3.6680900872354414
+        3.702463209133896
+        3.633376368854897
+    use baseline-o3-50steps-200k
+        8.797431779446072
+        4.525228352785803
+        3.7787478056961845
+        3.3130635654249545
+        3.459084940567493
+        3.473944972638037
+        3.4566581304310375
+
 ### both
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i both --tradeoff 0.5 --score_mean

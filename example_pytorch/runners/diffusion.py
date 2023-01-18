@@ -29,6 +29,7 @@ import torchvision.utils as tvu
 # import jax
 # from jax import numpy as jnp
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
 def load_data_for_worker(base_samples, batch_size, cond_class):
@@ -393,14 +394,15 @@ class Diffusion(object):
             num_workers=self.config.data.num_workers,
         )
 
-        if os.path.exists("score_stats_{}.npz".format(self.config.data.dataset)):
+        if 0 : #os.path.exists("score_stats_{}.npz".format(self.config.data.dataset)):
             score_stats = np.load("score_stats_{}.npz".format(self.config.data.dataset))
             stats = score_stats['stats']
             summation = score_stats['summation']
         else:
             stats = []
             summation = 0
-            for s in range(0, self.num_timesteps - 1):
+            # for s in range(0, self.num_timesteps - 1):
+            for s in [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 998]:
                 t = s + 1
                 a_t = (1-self.betas).cumprod(dim=0)[t]
                 a_s = (1-self.betas).cumprod(dim=0)[s]
@@ -427,6 +429,21 @@ class Diffusion(object):
                     
                     n_data += n_estimates * x.shape[0]
                 score_mean = score_sum / n_data
+
+                if 0:
+                    im = (score_mean - score_mean.min()) / (score_mean.max() - score_mean.min()) * 255.
+                    im = Image.fromarray(im.permute(1, 2, 0).data.cpu().numpy().astype(np.uint8))
+                    im.save('score_means_{}/{}.png'.format(self.config.data.dataset, t))
+                elif 1:
+                    score_mean_grey = torch.sum(score_mean**2, dim=0) # H,W
+                    quantile = torch.quantile(score_mean_grey.view(-1), q=0.9)
+                    score_mean_grey = torch.where(score_mean_grey > quantile.view(1, 1), 
+                        torch.ones_like(score_mean_grey), torch.zeros_like(score_mean_grey)) * 255.
+                    im = Image.fromarray(score_mean_grey.data.cpu().numpy().astype(np.uint8))
+                    im.save('score_means_{}/{}_quantile.png'.format(self.config.data.dataset, t))
+                else:
+                    pass
+
                 score_norm_mean = score_norm_sum / n_data
                 score_mean_norm = score_mean.view(-1).norm() ** 2
                 
@@ -434,9 +451,9 @@ class Diffusion(object):
                 summation += score_mean_norm.item() * (SNR_s / SNR_t - 1)
                 print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
             stats = np.stack(stats)
-            np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
+            # np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
         print(summation)
-        plot_score_mean_stats(stats)
+        # plot_score_mean_stats(stats)
         return
 
         encdec = EncDec(256)
