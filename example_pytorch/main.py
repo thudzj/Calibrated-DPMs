@@ -123,6 +123,9 @@ def parse_args_and_config():
     parser.add_argument(
         "--likelihood", type=str, default=None
     )
+    parser.add_argument(
+        "--train_recorder", action="store_true", default=False
+    )
 
     args = parser.parse_args()
     args.log_path = os.path.join(args.exp, "logs", args.doc)

@@ -373,6 +373,8 @@ class Diffusion(object):
         #     self.sample_interpolation(model)
         # elif self.args.sequence:
         #     self.sample_sequence(model)
+        elif self.args.train_recorder:
+            self.train_rec(model)
         else:
             raise NotImplementedError("Sample procedeure not defined")
 
@@ -394,15 +396,15 @@ class Diffusion(object):
             num_workers=self.config.data.num_workers,
         )
 
-        if 0 : #os.path.exists("score_stats_{}.npz".format(self.config.data.dataset)):
+        if os.path.exists("score_stats_{}.npz".format(self.config.data.dataset)):
             score_stats = np.load("score_stats_{}.npz".format(self.config.data.dataset))
             stats = score_stats['stats']
             summation = score_stats['summation']
         else:
             stats = []
             summation = 0
-            # for s in range(0, self.num_timesteps - 1):
-            for s in [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 998]:
+            for s in range(0, self.num_timesteps - 1):
+            # for s in [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 998]:
                 t = s + 1
                 a_t = (1-self.betas).cumprod(dim=0)[t]
                 a_s = (1-self.betas).cumprod(dim=0)[s]
@@ -434,7 +436,7 @@ class Diffusion(object):
                     im = (score_mean - score_mean.min()) / (score_mean.max() - score_mean.min()) * 255.
                     im = Image.fromarray(im.permute(1, 2, 0).data.cpu().numpy().astype(np.uint8))
                     im.save('score_means_{}/{}.png'.format(self.config.data.dataset, t))
-                elif 1:
+                elif 0:
                     score_mean_grey = torch.sum(score_mean**2, dim=0) # H,W
                     quantile = torch.quantile(score_mean_grey.view(-1), q=0.9)
                     score_mean_grey = torch.where(score_mean_grey > quantile.view(1, 1), 
@@ -451,7 +453,7 @@ class Diffusion(object):
                 summation += score_mean_norm.item() * (SNR_s / SNR_t - 1)
                 print("t", t, "score_norm_mean", score_norm_mean.item(), "score_mean_norm", score_mean_norm.item(), "ratio", (score_norm_mean/score_mean_norm).item())
             stats = np.stack(stats)
-            # np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
+            np.savez("score_stats_{}.npz".format(self.config.data.dataset), stats=stats, summation=summation.item())
         print(summation)
         # plot_score_mean_stats(stats)
         return
@@ -596,6 +598,101 @@ class Diffusion(object):
             print("The likelihood", losses1.mean() + losses2.mean() + losses3.mean())
         else:
             raise NotImplementedError
+
+    def train_rec(self, model):
+        args, config = self.args, self.config
+        dataset, test_dataset = get_dataset(args, config)
+
+        if args.subsample is None:
+            subsample = len(dataset)
+        else:
+            subsample = args.subsample
+        idx = torch.randperm(len(dataset))[:subsample]
+        train_loader = data.DataLoader(
+            torch.utils.data.Subset(dataset, idx),
+            batch_size=1000,
+            shuffle=True,
+            num_workers=self.config.data.num_workers,
+        )
+
+        num_steps = 20
+        timesteps = list(range(0, self.num_timesteps, self.num_timesteps // num_steps)) + [self.num_timesteps - 1, ]
+        print(timesteps)
+        
+        # estimate the ground truth
+        with torch.no_grad():
+            score_means = {}
+            for t in timesteps:
+                score_sum = 0
+                n_data = 0
+
+                for (x, _) in tqdm.tqdm(train_loader):
+                    x = x.to(self.device)
+                    x = data_transform(self.config, x)
+
+                    vec_t = (torch.ones(x.shape[0], device=self.device) * t).long()
+                    a = (1-self.betas).cumprod(dim=0).index_select(0, vec_t).view(-1, 1, 1, 1)
+        
+                    eps = torch.randn_like(x)
+                    z = x * a.sqrt() + eps * (1.0 - a).sqrt()
+                    score = model(z.float(), vec_t)
+                    score_sum += score.sum(0)
+                    n_data += x.shape[0]
+
+                score_means[t] = score_sum / n_data
+
+        # define the model h
+        # Mapping.
+        sizes = [self.num_timesteps, ] + [512, ] * (4 - 1) + [3072, ]
+        layers = []
+        for i in range(len(sizes) - 2):
+            layers.append(torch.nn.Linear(sizes[i], sizes[i + 1]))
+            layers.append(torch.nn.ReLU())
+        layers.append(torch.nn.Linear(sizes[-2], sizes[-1]))
+        h_fn = torch.nn.Sequential(*layers).to(self.device)
+        print(h_fn)
+
+        num_epochs = 100
+        optimizer = torch.optim.Adam(h_fn.parameters(), lr=1e-3)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
+        timesteps_torch = torch.from_numpy(np.array(timesteps)).to(self.device).long()
+        to_save = []
+        for _ in range(num_epochs):
+            # test
+            errors = []
+            for t in timesteps:
+                gd = score_means[t].view(-1)
+                input = torch.nn.functional.one_hot(torch.tensor([t]), self.num_timesteps).float().to(self.device)
+                pred = h_fn(input).squeeze()
+                errors.append((gd - pred).norm().item())
+            to_save.append(np.array(errors))
+            print(_, to_save[-1])
+
+            for (x, __) in train_loader:
+                x = x.to(self.device)
+                x = data_transform(self.config, x)
+                t = timesteps_torch[torch.randint(high=len(timesteps), size=(x.shape[0],))]
+                # t = torch.ones_like(t) * t[0]
+
+                with torch.no_grad():
+                    a = (1-self.betas).cumprod(dim=0).index_select(0, t).view(-1, 1, 1, 1)
+                    eps = torch.randn_like(x)
+                
+                    z = x * a.sqrt() + eps * (1.0 - a).sqrt()
+                    score = model(z.float(), t)
+
+                    # score = torch.stack([score_means[i.item()] for i in t], 0)
+                
+                input = torch.nn.functional.one_hot(t, self.num_timesteps).float()
+                loss = ((h_fn(input) - score.flatten(1)) ** 2).sum(-1).mean()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            
+            scheduler.step()
+        to_save = np.stack(to_save)
+        np.save("h_losses_{}.npz".format(self.config.data.dataset), to_save)
+        return
 
     def sample_fid(self, model, classifier=None):
         config = self.config
