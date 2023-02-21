@@ -34,12 +34,10 @@ CUDA_VISIBLE_DEVICES=3 python main.py --config celeba.yml --exp=experiments/cele
 
 ###  Estimate SDE likelihood
 ```
-CIFAR-10
-
+# CIFAR-10
 CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
 
-CelebA
-
+# CelebA
 CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
 ```
 
@@ -47,12 +45,11 @@ CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/cele
 ```
 cd edm/;
 
+# CIFAR-10
 CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12315 --nproc_per_node=1 generate.py --outdir=generations/cifar10/temp --seeds=0-49999 --subdirs --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
 
-CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12311 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 0
-CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12312 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 1
-CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12313 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 2
-CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12314 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 3
+# ImageNet
+CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12311 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl
 ```
 
 ## Thanks
