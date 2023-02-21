@@ -92,7 +92,7 @@ class OurModelWrapper:
         if self.method == 'baseline':
             return self._net(x, t, y)
         t_ = t.view(-1)[0].item()
-        if self.method == 'sec1.4':
+        if self.method == 'our':
             if "{:.9f}".format(t_) in self.score_mean_dict:
                 score_mean_t = self.score_mean_dict[str("{:.9f}".format(t_))]
             else:
