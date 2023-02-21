@@ -1,59 +1,98 @@
 # On Calibrating Diffusion Probabilistic Models
 
-The official code for the paper [On Calibrating Diffusion Probabilistic Models](https://arxiv.org/abs/xx) by Tianyu Pang, Cheng Lu, Chao Du, Min Lin, Shuicheng Yan, and Zhijie Deng.
+The official code for the paper [On Calibrating Diffusion Probabilistic Models](https://arxiv.org/abs/xx).
 
 --------------------
 We propose a straightforward method for calibrating diffusion probabilistic models that reduces the values of SM objectives and increases model likelihood lower bounds.
 
-## Usage
+## Acknowledgement
+The codes are modifed based on the [DPM-solver](https://github.com/LuChengTHU/dpm-solver) and [EDM](https://github.com/NVlabs/edm).
 
 
-### Reproduce CIFAR-10 results on image generation and FID
+## Reproducing CIFAR-10 results on image generation and FID
 
-#### Baseline 
-```
-CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i baseline
-```
-
-#### With calibration
-```
-CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --fid --timesteps=20 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i our --score_mean 
-```
-
-### Reproduce CelebA results on image generation and FID 
-
-#### Baseline
-```
-CUDA_VISIBLE_DEVICES=0 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=50 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i baseline
+The command for computing the FID of **baseline** methods (without calibration):
+```python
+python main.py --config cifar10.yml \
+    --exp=experiments/cifar10 \
+    --sample --fid \
+    --timesteps=20 \
+    --eta 0 --ni \
+    --skip_type=logSNR \
+    --sample_type=dpm_solver \
+    --start_time=1e-4 \
+    --dpm_solver_fast -i baseline
 ```
 
-#### With calibration
-```
-CUDA_VISIBLE_DEVICES=3 python main.py --config celeba.yml --exp=experiments/celeba --sample --fid --timesteps=50 --eta 0 --ni --skip_type=logSNR --sample_type=dpm_solver --start_time=1e-4 --dpm_solver_fast -i our --score_mean 
+The command for computing the FID of **our** methods (with calibration):
+```python
+python main.py --config cifar10.yml \
+    --exp=experiments/cifar10 \
+    --sample --fid \
+    --timesteps=20 \
+    --eta 0 --ni \
+    --skip_type=logSNR \
+    --sample_type=dpm_solver \
+    --start_time=1e-4 \
+    --dpm_solver_fast -i our --score_mean 
 ```
 
-###  Estimate SDE likelihood
-```
-# CIFAR-10
-CUDA_VISIBLE_DEVICES=0 python main.py --config cifar10.yml --exp=experiments/cifar10 --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
+## Reproducing CelebA results on image generation and FID 
 
-# CelebA
-CUDA_VISIBLE_DEVICES=1 python main.py --config celeba.yml --exp=experiments/celeba --sample --eta 0 --ni --start_time=1e-4 -i temp --likelihood sde
+The command for computing the FID of **baseline** methods (without calibration):
+```python
+python main.py --config celeba.yml \
+    --exp=experiments/celeba \
+    --sample --fid \
+    --timesteps=50 \
+    --eta 0 --ni \
+    --skip_type=logSNR \
+    --sample_type=dpm_solver \
+    --start_time=1e-4 \
+    --dpm_solver_fast -i baseline
 ```
 
-### Estimate the average estimated score with EDM
+The command for computing the FID of **our** methods (with calibration):
+```python
+python main.py --config celeba.yml \
+    --exp=experiments/celeba \
+    --sample --fid \
+    --timesteps=50 \
+    --eta 0 --ni \
+    --skip_type=logSNR \
+    --sample_type=dpm_solver \
+    --start_time=1e-4 \
+    --dpm_solver_fast -i our --score_mean 
 ```
+
+##  Estimating SDE likelihood
+The command for running on **CIFAR-10**:
+```python
+python main.py --config cifar10.yml \
+    --exp=experiments/cifar10 \
+    --sample --eta 0 \
+    --ni --start_time=1e-4 \
+    -i temp --likelihood sde
+```
+
+The command for running on **CelebA**:
+```python
+python main.py --config celeba.yml \
+    --exp=experiments/celeba \
+    --sample --eta 0 \
+    --ni --start_time=1e-4 \
+    -i temp --likelihood sde
+```
+
+## Estimating the average estimated score with EDM
+
+```python
 cd edm/;
 
 # CIFAR-10
-CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12315 --nproc_per_node=1 generate.py --outdir=generations/cifar10/temp --seeds=0-49999 --subdirs --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
+python torch.distributed.run --master_port 12315 --nproc_per_node=1 generate.py --outdir=generations/cifar10/temp --seeds=0-49999 --subdirs --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
 
 # ImageNet
-CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.run --master_port 12311 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl
+python torch.distributed.run --master_port 12311 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl
 ```
-
-## Thanks
-
-[DPM-solver](https://github.com/LuChengTHU/dpm-solver)
-
-[EDM](https://github.com/NVlabs/edm)
+The commands for running on `FFHQ` and `AFHQv2` are similar.
