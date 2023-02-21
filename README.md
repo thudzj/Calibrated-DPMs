@@ -54,3 +54,9 @@ CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.run --master_port 12312 --npr
 CUDA_VISIBLE_DEVICES=2 python -m torch.distributed.run --master_port 12313 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 2
 CUDA_VISIBLE_DEVICES=3 python -m torch.distributed.run --master_port 12314 --nproc_per_node=1 generate.py --outdir=generations/imagenet/temp --seeds=0-49999 --subdirs --steps=256 --S_churn=40 --S_min=0.05 --S_max=50 --S_noise=1.003 --method our --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --num_splits 4 --split_id 3
 ```
+
+## Thanks
+
+[DPM-solver](https://github.com/LuChengTHU/dpm-solver)
+
+[EDM](https://github.com/NVlabs/edm)
