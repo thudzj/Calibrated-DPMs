@@ -1,6 +1,6 @@
 # On Calibrating Diffusion Probabilistic Models
 
-The official code for the paper [On Calibrating Diffusion Probabilistic Models](https://arxiv.org/abs/xx).
+The official code for the paper [On Calibrating Diffusion Probabilistic Models](https://arxiv.org/abs/2302.10688).
 
 --------------------
 We propose a straightforward method for calibrating diffusion probabilistic models that reduces the values of SM objectives and increases model likelihood lower bounds.
